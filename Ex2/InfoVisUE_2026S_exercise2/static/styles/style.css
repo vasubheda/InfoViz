@@ -1,0 +1,96 @@
+:root{
+    --division_width: 400px;
+}
+
+body {
+    padding-left: 3em;
+    font-family: Calibri, Arial, Helvetica, sans-serif;
+    color: #222222;
+    background-color: #fff;
+}
+
+
+
+.label{
+    font-size: small;
+}
+
+div.tooltip {
+    float: left; position: absolute; text-align: left;
+    width: var(--division_width); height: 100px; padding: 10px;
+    font-size: 16px;
+    background: floralwhite;
+    border: 0; border-radius: 8px;
+    pointer-events: none;
+}
+
+
+.subtitle text {
+  font-size: 10px;
+  text-decoration: underline;
+  fill: gray;
+}
+
+path.line {
+  fill: none;
+  stroke: midnightblue;
+  stroke-width: 3px;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #595065;
+  shape-rendering: geometricPrecision;
+}
+
+text.title {
+  font-size: 10px;
+  fill: Black;
+}
+.main_container {
+    float: left; align-content: center;
+    height: auto; width: auto;
+    margin-top:5px; margin-bottom: 10px; margin-left:5px; padding-top: 5px; padding-bottom: 10px; padding-left:5px;
+    box-shadow: rgba(0, 0, 0, 0.05) 0 0 0 1px, rgb(209, 213, 219) 0 0 0 1px inset;
+}
+
+.container_l {
+    float: left; display: table-cell; vertical-align:top;
+    height: auto; padding: 10px; width: 800px;
+    border: 0 solid black;
+    font-size: large;
+}
+.container_r {
+    float: left; display: table-cell; vertical-align:top;
+    height: 10%; padding: 10px; width: 10%;
+    border: 0 solid black;
+    font-size: large;
+}
+
+.container_tool {
+    float: left; display: table-cell; vertical-align:top;
+    height: auto; padding: 10px; width: auto; margin-left: 0px; margin-top: -100px;
+    border: 0 solid black;
+    font-size: large;
+}
+
+.title_div {
+    margin-left:5px;
+}
+
+
+.dd_container {
+    float: left; align-content: center;
+    height: auto; width: auto;
+    margin-top:5px; margin-bottom: 10px; margin-left:5px; padding: 5px;
+    box-shadow: rgba(0, 0, 0, 0.05) 0 0 0 1px, rgb(209, 213, 219) 0 0 0 1px inset;
+    opacity: 100.0;
+}
+
+.svg_line_plot {
+    float:left; align-content: center;
+    height: 500px; width: 71.2%;
+    margin-top:0px; margin-bottom: 10px; margin-left:5px; padding-top: 0; padding-bottom: 0; padding-left:3%;
+    box-shadow: rgba(0, 0, 0, 0.05) 0 0 0 1px, rgb(209, 213, 219) 0 0 0 1px inset;
+    opacity: 0.0; font-size: large;
+}

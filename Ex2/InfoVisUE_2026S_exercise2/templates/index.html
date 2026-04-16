@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>InfoVis VU 2026</title>
+
+    <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='styles/style.css')}}">
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.0/topojson.min.js"></script>
+    <script src="{{url_for('static',filename='js/map.js')}}"></script>
+    <script src="{{url_for('static',filename='js/scatterplot.js')}}"></script>
+
+</head>
+<body>
+
+<h1>InfoVis VU 2026 - Exercise 2</h1>
+<p>Mitzalo Gaston Reyes Polk-Reyes (12532869)</p>
+<p>Vishwas Vikram Bheda (Matrikelnummer: PENDING)</p>
+<p>Wörndle Philipp (Matrikelnummer: PENDING)</p>
+
+
+<div id="main_container" class="main_container">
+    <div class="container_l">
+        <svg id="svg_map"></svg>
+    </div>
+    <div class="container_r">
+        <p></p>
+        <svg id="svg_plot"></svg>
+    </div>
+</div>
+
+    <div id = "dropdown_div" class="dd_container">
+    <label>Indicator:</label>
+        <select id="indicator_change" class="dropdown"></select></div>
+<div id="svg_line_plot" class="svg_line_plot">
+
+</div>
+
+<div id="tooltip" style="position: absolute; visibility: hidden; background: white; border: 1px solid black; padding: 5px; border-radius: 5px; pointer-events: none; z-index: 10;"></div>
+
+<script>
+    const pcaData = {{ pca_results | safe }};
+    const timeSeriesData = {{ full_data | safe }};
+
+    initScatterplot(pcaData);
+    initMap(timeSeriesData);
+</script>
+
+</body>
+</html>
