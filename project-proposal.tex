@@ -44,72 +44,68 @@ lifecycle:
 % ── Sections ──────────────────────────────────────────────────────────────
 \section{1. Data Understanding}
 \begin{itemize}[leftmargin=1.5em]
-    \item \textit{What data are you investigating?} Drug data collected by united nations on price, purities and seizures.
+    \item \textit{What data are you investigating?} 
+          Spatio-temporal data aggregated by the United Nations Office on Drugs and Crime (UNODC), detailing global drug prices, purity levels, and seizure volumes.
           
-
-    \item \textit{What are your questions about the data?} Effectiveness of Drug Seizures in Europe on Price and Purity. What european coutries are most profitable for internal drug selling. What cross european countries should police focus their seizures on what drug.
+    \item \textit{What are your questions about the data?} 
+          1) What is the correlation between the volume of law enforcement drug seizures and the subsequent street price and purity of those drugs in European markets? 
+          2) Which European markets exhibit the highest profit margins (retail vs.\ wholesale price disparity)? 
+          3) How do localized seizure events impact neighboring countries' drug markets?
+          4) Which countries prove to be a more profitable market?
+          5) Which drugs should law enforcement focus on in which countries?
 
     \item \textit{Why is this interesting / relevant?}
-          Politicians need to make decisions on stricter/lasher policies
-          and Police needs to understand if their efforts are effective.
+          Understanding the response of illicit markets in response to law enforcement busts is critical for policy-making. It helps authorities determine whether seizures effectively disrupt markets or inadvertently increase drug profitability and risk.
 \end{itemize}
 
 \section{2. Data Mining}
 \begin{itemize}[leftmargin=1.5em]
     \item \textit{Where and how do you expect to find the necessary data?}
-          United Nations collects this data on a global scale.
+          Open-source datasets provided by the UNODC data portal (https://data.unodc.org).
 
     \item \textit{How will you retrieve the data?}
-          Download from website.
+          Data will be systematically extracted via CSV/Excel exports.
 \end{itemize}
 
 \section{3. Data Cleaning}
 \begin{itemize}[leftmargin=1.5em]
     \item \textit{Do you have to merge multiple data sets?}
-          Yes, there are 2 excel files with a total of 3 different sheets
-          that need to be combined.
+          Yes. The raw data spans multiple sheets and files separated by metric. These will be normalized and joined into a centralized relational table.
 
     \item \textit{Do you expect to have missing or uncertain data values?}
-          Yes, not every country collects and/or reports for/to the
-          United Nations.
+          Yes. Reporting varies significantly by country and year, leading to potentially sparse and variable quality data.
 
     \item \textit{How will you handle those?}
-          Focus on most prominent/dangerous drugs to identify trends for
-          a european solution to a global problem.
+          We will exclusively focus on drugs and countries which have sufficient data for rigorous analysis, and in the case of sporadic missing values, these will be imputed, while being flagged as originally missing.
 \end{itemize}
 
 \section{4. Data Exploration}
 \begin{itemize}[leftmargin=1.5em]
     \item \textit{Which visual encoding and interaction techniques do you
           plan to use to explore the data and to derive hypotheses?}
-          Seizures, prices and purities are all numeric values collected
-          for geographic regions, therefore we most likely work a lot
-          with distribution plots and maps/heatmaps.
+          We will utilize choropleth maps to display geographic data. We shall implement linking: selecting a specific country will dynamically filter related plots (scatterplots, line charts, bar charts).
 
     \item \textit{Which programs / libraries / tools do you plan to use?}
-          Most likely pandas, sklearn, matplotlib and seaborn for data
-          analysis and streamlit for an interactive dashboard.
+          Python will form the backbone of the project. Libraries such as Pandas and Scikit Learn will be used for the main ETL processing, while the interactive frontend will be built using Streamlit.
 \end{itemize}
 
 \section{5. Feature Engineering}
 \begin{itemize}[leftmargin=1.5em]
     \item \textit{Which data attributes / features do you plan to select
           or extract to answer your questions?}
-          A) In-country price spreads (wholesale vs.\ retail),
-          B) price-to-purity ratio, and
-          C) price-to-amount-seized ratio.
-          For individual countries this could identify European countries
-          that expose the most profitable internal drug markets for
-          politicians to focus on, and also create cross-border
-          opportunities aligned under seizure risk and purity concerns
-          for police to focus on.
+          \begin{itemize}
+              \item \textbf{Market Markup:} In-country price spreads (Retail Price - Wholesale Price).
+              \item \textbf{Value-to-Risk Ratio:} Price-to-amount-seized ratio, acting as a proxy for market vulnerability.
+              \item \textbf{Quality-Adjusted Price:} Normalizing price against purity levels to find true market cost.
+              \item \textbf{Temporal Lag Variables:} Calculating year-over-year changes to observe the effect of seizures over time.
+          \end{itemize}
 \end{itemize}
 
 \section{6. Predictive Modeling \normalfont\small(Optional)}
 \begin{itemize}[leftmargin=1.5em]
     \item \textit{Do you plan to use or train a model to make
           predictions?}
-          Not planned yet.
+          Not planned as of yet, could be subject to change.
 
     \item \textit{If so, provide some details on the planned training
           and validation strategy.}
