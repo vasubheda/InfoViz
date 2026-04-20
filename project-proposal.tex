@@ -1,0 +1,120 @@
+\documentclass[a4paper,12pt]{article}
+
+% ── Packages ──────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue
+}
+
+% ── Title Setup ───────────────────────────────────────────────────────────
+\title{%
+    \textbf{Project Proposal}
+}
+\author{ Group 63}
+\date{}
+
+% ── Section Formatting ────────────────────────────────────────────────────
+\titleformat{\section}{\large\bfseries}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+
+% ══════════════════════════════════════════════════════════════════════════
+\begin{document}
+% ══════════════════════════════════════════════════════════════════════════
+
+\maketitle
+\thispagestyle{empty}
+
+\noindent
+Please submit a project proposal (approximately 2 pages) outlining your
+planned topic, objectives, methodology, and expected outcomes.
+
+\noindent
+The proposal should roughly follow the first steps of the data science
+lifecycle:
+
+% ── Sections ──────────────────────────────────────────────────────────────
+\section{1. Data Understanding}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textit{What data are you investigating?} Drug data collected by united nations on price, purities and seizures.
+          
+
+    \item \textit{What are your questions about the data?} Effectiveness of Drug Seizures in Europe on Price and Purity. What european coutries are most profitable for internal drug selling. What cross european countries should police focus their seizures on what drug.
+
+    \item \textit{Why is this interesting / relevant?}
+          Politicians need to make decisions on stricter/lasher policies
+          and Police needs to understand if their efforts are effective.
+\end{itemize}
+
+\section{2. Data Mining}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textit{Where and how do you expect to find the necessary data?}
+          United Nations collects this data on a global scale.
+
+    \item \textit{How will you retrieve the data?}
+          Download from website.
+\end{itemize}
+
+\section{3. Data Cleaning}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textit{Do you have to merge multiple data sets?}
+          Yes, there are 2 excel files with a total of 3 different sheets
+          that need to be combined.
+
+    \item \textit{Do you expect to have missing or uncertain data values?}
+          Yes, not every country collects and/or reports for/to the
+          United Nations.
+
+    \item \textit{How will you handle those?}
+          Focus on most prominent/dangerous drugs to identify trends for
+          a european solution to a global problem.
+\end{itemize}
+
+\section{4. Data Exploration}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textit{Which visual encoding and interaction techniques do you
+          plan to use to explore the data and to derive hypotheses?}
+          Seizures, prices and purities are all numeric values collected
+          for geographic regions, therefore we most likely work a lot
+          with distribution plots and maps/heatmaps.
+
+    \item \textit{Which programs / libraries / tools do you plan to use?}
+          Most likely pandas, sklearn, matplotlib and seaborn for data
+          analysis and streamlit for an interactive dashboard.
+\end{itemize}
+
+\section{5. Feature Engineering}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textit{Which data attributes / features do you plan to select
+          or extract to answer your questions?}
+          A) In-country price spreads (wholesale vs.\ retail),
+          B) price-to-purity ratio, and
+          C) price-to-amount-seized ratio.
+          For individual countries this could identify European countries
+          that expose the most profitable internal drug markets for
+          politicians to focus on, and also create cross-border
+          opportunities aligned under seizure risk and purity concerns
+          for police to focus on.
+\end{itemize}
+
+\section{6. Predictive Modeling \normalfont\small(Optional)}
+\begin{itemize}[leftmargin=1.5em]
+    \item \textit{Do you plan to use or train a model to make
+          predictions?}
+          Not planned yet.
+
+    \item \textit{If so, provide some details on the planned training
+          and validation strategy.}
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════
+\end{document}
+% ══════════════════════════════════════════════════════════════════════════
