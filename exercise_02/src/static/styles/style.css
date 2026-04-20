@@ -1,0 +1,131 @@
+:root{
+    --division_width: 400px;
+}
+
+body {
+    padding-left: 3em;
+    font-family: Calibri, Arial, Helvetica, sans-serif;
+    color: #222222;
+    background-color: #fff;
+}
+
+
+
+.label{
+    font-size: small;
+}
+
+div.tooltip {
+    float: left; position: absolute; text-align: left;
+    width: 340px; height: auto; padding: 10px;
+    font-size: 13px;
+    background: floralwhite;
+    border: 0; border-radius: 8px;
+    pointer-events: none;
+    z-index: 999;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+
+.subtitle text {
+  font-size: 10px;
+  text-decoration: underline;
+  fill: gray;
+}
+
+path.line {
+  fill: none;
+  stroke: midnightblue;
+  stroke-width: 3px;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #595065;
+  shape-rendering: geometricPrecision;
+}
+
+text.title {
+  font-size: 10px;
+  fill: Black;
+}
+.main_container {
+    float: left; align-content: center;
+    height: auto; width: auto;
+    margin-top:5px; margin-bottom: 10px; margin-left:5px; padding-top: 5px; padding-bottom: 10px; padding-left:5px;
+    box-shadow: rgba(0, 0, 0, 0.05) 0 0 0 1px, rgb(209, 213, 219) 0 0 0 1px inset;
+}
+
+.container_l {
+    float: left; display: table-cell; vertical-align:top;
+    height: auto; padding: 10px; width: 800px;
+    border: 0 solid black;
+    font-size: large;
+}
+.container_r {
+    float: left; display: table-cell; vertical-align:top;
+    height: auto; padding: 10px; width: 450px;
+    border: 0 solid black;
+    font-size: large;
+}
+
+.container_tool {
+    float: left; display: table-cell; vertical-align:top;
+    height: auto; padding: 10px; width: auto; margin-left: 0px; margin-top: -100px;
+    border: 0 solid black;
+    font-size: large;
+}
+
+.title_div {
+    margin-left:5px;
+}
+
+
+.dd_container {
+    float: left; align-content: center;
+    height: auto; width: auto;
+    margin-top:5px; margin-bottom: 10px; margin-left:5px; padding: 5px;
+    box-shadow: rgba(0, 0, 0, 0.05) 0 0 0 1px, rgb(209, 213, 219) 0 0 0 1px inset;
+    opacity: 100.0;
+}
+
+.svg_line_plot {
+    float:left; align-content: center;
+    height: auto; width: auto;
+    margin-top:0px; margin-bottom: 10px; margin-left:5px; padding-top: 5px; padding-bottom: 5px; padding-left:5px;
+    box-shadow: rgba(0, 0, 0, 0.05) 0 0 0 1px, rgb(209, 213, 219) 0 0 0 1px inset;
+    opacity: 0.0; font-size: large;
+}
+
+/* Year slider */
+#year_slider {
+    width: 220px;
+    margin-left: 8px;
+    vertical-align: middle;
+    cursor: pointer;
+}
+#year_label {
+    margin-left: 6px;
+    font-weight: bold;
+    min-width: 2.5em;
+    display: inline-block;
+}
+
+/* PCA dot labels */
+text.dot-label {
+    pointer-events: none;
+    font-size: 8px;
+    fill: #444;
+}
+
+/* Line chart labels */
+text.line-label {
+    pointer-events: none;
+}
+
+/* Brush styling */
+.brush .selection {
+    fill: rgba(255, 165, 0, 0.2);
+    stroke: orange;
+    stroke-width: 1.5;
+}

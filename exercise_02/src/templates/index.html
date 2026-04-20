@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>InfoVis VU 2026</title>
+
+    <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='styles/style.css')}}">
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.0/topojson.min.js"></script>
+    <script src="{{url_for('static',filename='js/state.js')}}"></script>
+    <script src="{{url_for('static',filename='js/map.js')}}"></script>
+    <script src="{{url_for('static',filename='js/scatter.js')}}"></script>
+    <script src="{{url_for('static',filename='js/linechart.js')}}"></script>
+
+</head>
+<body>
+
+<h1>InfoVis VU 2026 - Exercise 2</h1>
+<p>
+    Name: <input type="text" id="student_name" placeholder="Your name" style="margin-right:20px;">
+    Matrikelnummer: <input type="text" id="matrikel" placeholder="e.g. 12345678">
+</p>
+
+<div id="main_container" class="main_container">
+    <div class="container_l">
+        <svg id="svg_map"></svg>
+    </div>
+    <div class="container_r">
+        <svg id="svg_plot"></svg>
+    </div>
+</div>
+
+<div id="dropdown_div" class="dd_container">
+    <label>Indicator:</label>
+    <select id="indicator_change" class="dropdown"></select>
+    <label style="margin-left:20px;">Year:</label>
+    <input type="range" id="year_slider" min="1960" max="2020" value="2020" step="1">
+    <span id="year_label">2020</span>
+</div>
+
+<div id="svg_line_plot" class="svg_line_plot"></div>
+
+<div id="tooltip" class="tooltip" style="opacity:0;"></div>
+
+<script>
+    const CSV_DATA       = {{ csvData | safe }};
+    const PCA_DATA       = {{ pcaData | safe }};
+    const INDICATOR_LIST = {{ indicatorList | safe }};
+
+    function initAll(csvData, pcaData, indicatorList) {
+        // 1. Initialize shared state
+        initState(csvData, pcaData, indicatorList);
+
+        // 2. Populate indicator dropdown
+        const select = document.getElementById('indicator_change');
+        indicatorList.forEach(function(ind) {
+            const opt = document.createElement('option');
+            opt.value = ind;
+            opt.textContent = ind;
+            select.appendChild(opt);
+        });
+        select.value = indicatorList[0];
+
+        select.addEventListener('change', function() {
+            setIndicator(this.value);
+        });
+
+        // 3. Year slider
+        const slider = document.getElementById('year_slider');
+        const yearLabel = document.getElementById('year_label');
+        slider.addEventListener('input', function() {
+            yearLabel.textContent = this.value;
+            setYear(parseInt(this.value));
+        });
+
+        // 4. Initialize views in order (map first so callbacks exist before scatter combines them)
+        initMap();
+        initScatter();
+        initLineChart();
+    }
+
+    initAll(CSV_DATA, PCA_DATA, INDICATOR_LIST);
+</script>
+
+</body>
+</html>
