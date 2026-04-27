@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
-CSV_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'exercise_01', 'data', 'agriRuralDevelopment.csv')
+CSV_PATH = os.path.join(os.path.dirname(__file__), 'static', 'data', 'agriRuralDevelopment_cleaned.csv')
 
 COUNTRIES = [
     'Afghanistan', 'Albania', 'Algeria', 'Angola', 'Argentina', 'Armenia',

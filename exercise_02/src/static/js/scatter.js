@@ -96,6 +96,7 @@ function initScatter() {
     // Register state callbacks (combine with map.js callbacks already registered)
     AppState.onHoverChange = combineCallbacks(AppState.onHoverChange, updateScatterHighlight);
     AppState.onBrushChange = combineCallbacks(AppState.onBrushChange, updateScatterHighlight);
+
     AppState.onIndicatorChange = combineCallbacks(AppState.onIndicatorChange, updateDotStyling);
     AppState.onYearChange = combineCallbacks(AppState.onYearChange, updateDotStyling);
 }

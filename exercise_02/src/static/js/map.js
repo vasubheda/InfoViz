@@ -43,10 +43,16 @@ function initMap() {
         updateChoropleth();
 
         // Register state callbacks
-        AppState.onHoverChange = updateMapHighlight;
-        AppState.onBrushChange = updateMapHighlight;
-        AppState.onYearChange = function() { updateChoropleth(); updateMapHighlight(); };
-        AppState.onIndicatorChange = function() { updateChoropleth(); updateMapHighlight(); };
+        AppState.onHoverChange = combineCallbacks(AppState.onHoverChange, updateMapHighlight);
+        AppState.onBrushChange = combineCallbacks(AppState.onBrushChange, updateMapHighlight);
+        AppState.onYearChange = combineCallbacks(AppState.onYearChange, function() { 
+            updateChoropleth(); 
+            updateMapHighlight(); 
+        });
+        AppState.onIndicatorChange = combineCallbacks(AppState.onIndicatorChange, function() { 
+            updateChoropleth(); 
+            updateMapHighlight(); 
+        });
     });
 }
 
@@ -87,6 +93,7 @@ function updateMapHighlight() {
 
 function onMapMouseover(event, d) {
     const csvName = AppState.topoNameToCSV.get(d.properties.admin);
+    //console.log("Map hovered:", d.properties.admin, "-> Extracted CSV Name:", csvName);
     if (!csvName) return;
     setHoveredCountry(csvName);
     showTooltip(event, csvName);
