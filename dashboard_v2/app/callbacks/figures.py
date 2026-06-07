@@ -33,7 +33,6 @@ def register(app, data):
         Input("substance-table", "selected_rows"),
         Input("country-store", "data"),
         Input("year-slider", "value"),
-        Input("timeseries-metric", "value"),
         Input("x-axis", "value"),
         Input("y-axis", "value"),
         Input("arb-country", "value"),
@@ -42,7 +41,7 @@ def register(app, data):
         Input("selection-store", "data"),
         State("substance-table", "data"),
     )
-    def update(selected_rows, countries, year_range, metric, x_axis, y_axis,
+    def update(selected_rows, countries, year_range, x_axis, y_axis,
                arb_country, arb_substance, arb_level, selection,
                table_rows):
         selection = dict(selection or {})
@@ -74,7 +73,7 @@ def register(app, data):
         f_comb = apply_filters(data.combined, filters, selection)
 
         enf_map = maps.enforcement_map(data, f_seiz, selection)
-        ts = timeseries.timeseries(data, f_comb, metric, selection, year_range)
+        ts = timeseries.timeseries(data, f_comb, selection, year_range)
         lag_fig = lag_corr.lag_correlation(data, selection,
                                            target=("Typical_USD" if y_axis != "Typical"
                                                    else "Typical"))

@@ -117,12 +117,9 @@ def build_layout(data):
         # Row: time series (Q5 / overview)
         dbc.Row([
             _card("Trends over time",
-                  [dcc.Dropdown(id="timeseries-metric", clearable=False,
-                                value="seizures", className="small mb-2",
-                                options=[{"label": "Seizures (Tons)", "value": "seizures"},
-                                         {"label": "Price (USD/g)", "value": "price"},
-                                         {"label": "Purity (%)", "value": "purity"}]),
-                   *_graph("timeseries-chart", "Click a point to filter by year")],
+                  _graph("timeseries-chart",
+                         "Seizures, price & purity over time — click a point to "
+                         "filter by year"),
                   md=12),
         ], className="mb-4"),
 

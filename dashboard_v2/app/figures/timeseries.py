@@ -1,47 +1,68 @@
-"""Time-series line chart with a metric selector and imputation-aware markers."""
-import plotly.express as px
+"""Time-series line charts (seizures, price, purity) stacked as facets that
+share one legend, with imputation-aware markers."""
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from .. import theme
 from . import helpers
 
-METRICS = {
-    "seizures": ("Kilograms", lambda x: x / 1000, "Seizures (Tons)", "seizure_imputed"),
-    "price":    ("Typical_USD", lambda x: x, "Average Price (USD/g)", "price_imputed"),
-    "purity":   ("Typical", lambda x: x, "Average Purity (%)", "purity_imputed"),
-}
+# (column, transform, y-axis label, imputed-flag column, aggregation)
+METRICS = [
+    ("Kilograms", lambda x: x / 1000, "Seizures (Tons)", "seizure_imputed", "sum"),
+    ("Typical_USD", lambda x: x, "Average Price (USD/g)", "price_imputed", "mean"),
+    ("Typical", lambda x: x, "Average Purity (%)", "purity_imputed", "mean"),
+]
 
 
-def timeseries(data, filtered_combined, metric, selection, year_range,
-               height=400, title_prefix=""):
-    if metric not in METRICS or len(filtered_combined) == 0:
+def timeseries(data, filtered_combined, selection, year_range, height=750):
+    """Three stacked line charts — one per metric — sharing a single legend."""
+    if len(filtered_combined) == 0:
         return helpers.empty_fig("No data for selected filters", height)
-    col, transform, y_label, imp_col = METRICS[metric]
 
-    agg = "sum" if metric == "seizures" else "mean"
-    grouped = (filtered_combined.groupby(["Year", "Substance"])
-               .agg(val=(col, agg), imp=(imp_col, "max")).reset_index())
-    grouped["Value"] = transform(grouped["val"])
-    grouped["Year"] = grouped["Year"].astype(int)
-
-    cmap = {s: data.substance_color_map[s] for s in grouped["Substance"].unique()
+    cmap = {s: data.substance_color_map[s]
+            for s in filtered_combined["Substance"].unique()
             if s in data.substance_color_map}
-    fig = px.line(grouped, x="Year", y="Value", color="Substance", markers=True,
-                  title=f"{title_prefix}{y_label} over time",
-                  labels={"Value": y_label}, color_discrete_map=cmap)
-    fig.update_traces(line=dict(width=3),
-                      marker=dict(size=9, line=dict(width=2, color="white")))
 
-    # Overlay hollow markers on imputed points (per substance trace).
-    for substance, g in grouped.groupby("Substance"):
-        imp = g[g["imp"]]
-        if len(imp):
+    fig = make_subplots(rows=len(METRICS), cols=1, shared_xaxes=True,
+                        vertical_spacing=0.06,
+                        subplot_titles=[m[2] for m in METRICS])
+
+    legend_seen = set()
+    for row, (col, transform, y_label, imp_col, agg) in enumerate(METRICS, start=1):
+        grouped = (filtered_combined.groupby(["Year", "Substance"])
+                   .agg(val=(col, agg), imp=(imp_col, "max")).reset_index())
+        grouped["Value"] = transform(grouped["val"])
+        grouped["Year"] = grouped["Year"].astype(int)
+
+        for substance, g in grouped.sort_values("Year").groupby("Substance"):
+            color = cmap.get(substance, theme.TOL_MUTED[0])
+            # One legend entry per substance, shown only the first time it
+            # appears; legendgroup ties all three rows together and feeds the
+            # click cross-filter (selection.py reads point.legendgroup).
+            show = substance not in legend_seen
+            legend_seen.add(substance)
             fig.add_trace(go.Scatter(
-                x=imp["Year"], y=imp["Value"], mode="markers",
-                marker=dict(symbol="circle-open", size=13,
-                            line=dict(width=2, color="#000000"),
-                            color=cmap.get(substance, "#000")),
-                showlegend=False, hoverinfo="skip"))
+                x=g["Year"], y=g["Value"], mode="lines+markers", name=substance,
+                legendgroup=substance, showlegend=show,
+                line=dict(width=3, color=color),
+                marker=dict(size=9, line=dict(width=2, color="white"), color=color),
+                hovertemplate=f"{y_label}: %{{y:.2f}}<extra>{substance}</extra>"),
+                row=row, col=1)
+
+            # Overlay hollow markers on imputed points.
+            imp = g[g["imp"]]
+            if len(imp):
+                fig.add_trace(go.Scatter(
+                    x=imp["Year"], y=imp["Value"], mode="markers",
+                    marker=dict(symbol="circle-open", size=13,
+                                line=dict(width=2, color="#000000"), color=color),
+                    legendgroup=substance, showlegend=False, hoverinfo="skip"),
+                    row=row, col=1)
+
+        fig.update_yaxes(title_text=y_label, gridcolor=theme.GRID, rangemode="tozero",
+                         row=row, col=1)
+        fig.update_xaxes(type="linear", tickmode="linear", dtick=1, tickformat="d",
+                         gridcolor=theme.GRID, row=row, col=1)
 
     if selection.get("year"):
         fig.add_vline(x=selection["year"], line_dash="dash",
@@ -55,7 +76,5 @@ def timeseries(data, filtered_combined, metric, selection, year_range,
                     xanchor="left", x=1.02, bgcolor="rgba(255,255,255,0.9)",
                     bordercolor="#333", borderwidth=1),
         margin=dict(l=50, r=150, t=50, b=60),
-        xaxis=dict(type="linear", tickmode="linear", dtick=1, tickformat="d",
-                   gridcolor=theme.GRID),
-        yaxis=dict(gridcolor=theme.GRID), plot_bgcolor=theme.PLOT_BG)
+        plot_bgcolor=theme.PLOT_BG)
     return fig
