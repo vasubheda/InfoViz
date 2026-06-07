@@ -25,7 +25,6 @@ def register(app, data):
         Output("margin-map", "figure"),
         Output("arbitrage-map", "figure"),
         Output("priority-chart", "figure"),
-        Output("scatter-plot", "figure"),
         Output("border-arbitrage-chart", "figure"),
         Output("border-arbitrage-gaps", "children"),
         Output("neighbour-map", "figure"),
@@ -95,7 +94,6 @@ def register(app, data):
             margin = maps.margin_map(data, selection)
             arb = maps.arbitrage_map(data, f_prices, arb_country, arb_substance, arb_level)
         prio = priority.priority_dotplot(data, selection, substances, year_range)
-        scat = multivariate.scatter(data, f_comb, selection)
 
         # Border arbitrage needs prices for the selected country AND its
         # neighbours, so it cannot use the country-brushed frame. Filter by
@@ -123,7 +121,7 @@ def register(app, data):
         table_data = _substance_rows(all_substances, t_seiz, t_prices, t_comb)
 
         return (enf_map, ts, lag_fig, lag_note, reg_fig, reg_stats, hm_r, hm_w,
-                margin, arb, prio, scat, border_arb, border_gaps, neigh_map,
+                margin, arb, prio, border_arb, border_gaps, neigh_map,
                 kpi, table_data)
 
 

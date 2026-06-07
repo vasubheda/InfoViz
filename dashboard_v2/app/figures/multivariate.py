@@ -1,8 +1,5 @@
-"""Multivariate views: per-substance regression facets (Q1) and the
-price-vs-purity bubble scatter.
-"""
+"""Multivariate views: per-substance regression facets (Q1)."""
 import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
@@ -56,28 +53,3 @@ def regression_facets(data, filtered_combined, x_axis, y_axis):
     stats = html.Div([html.Strong("Correlation coefficients: "), html.Br(),
                       *[html.Div(r) for r in results]])
     return fig, stats
-
-
-def scatter(data, filtered_combined, selection):
-    if len(filtered_combined) == 0:
-        return helpers.empty_fig("No data for selected filters", 500)
-    df = filtered_combined
-    cmap = {s: data.substance_color_map[s] for s in df["Substance"].unique()
-            if s in data.substance_color_map}
-    fig = px.scatter(df, x="Typical_USD", y="Typical", size="Kilograms",
-                     color="Substance", hover_data=["Country", "Year"],
-                     title="Price vs purity (size = seizures)",
-                     labels={"Typical_USD": "Price (USD/g)", "Typical": "Purity (%)"},
-                     opacity=0.7, color_discrete_map=cmap)
-    fig.update_traces(marker=dict(line=dict(width=1, color="white"),
-                      sizemode="diameter",
-                      sizeref=2. * max(df["Kilograms"]) / (40. ** 2), sizemin=4))
-    fig.update_layout(height=500,
-                      legend=dict(title="Substance", orientation="v",
-                                  yanchor="middle", y=0.5, xanchor="left", x=1.02,
-                                  bgcolor="rgba(255,255,255,0.9)",
-                                  bordercolor="#333", borderwidth=1),
-                      margin=dict(l=50, r=150, t=50, b=50),
-                      xaxis=dict(gridcolor=theme.GRID),
-                      yaxis=dict(gridcolor=theme.GRID), plot_bgcolor=theme.PLOT_BG)
-    return fig

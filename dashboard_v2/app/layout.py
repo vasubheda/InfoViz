@@ -114,7 +114,7 @@ def build_layout(data):
             ]),
         ])), className="mb-4"),
 
-        # Row: time series (Q5 / overview) + price vs purity
+        # Row: time series (Q5 / overview)
         dbc.Row([
             _card("Trends over time",
                   [dcc.Dropdown(id="timeseries-metric", clearable=False,
@@ -122,9 +122,8 @@ def build_layout(data):
                                 options=[{"label": "Seizures (Tons)", "value": "seizures"},
                                          {"label": "Price (USD/g)", "value": "price"},
                                          {"label": "Purity (%)", "value": "purity"}]),
-                   *_graph("timeseries-chart", "Click a point to filter by year")]),
-            _card("Price vs purity",
-                  _graph("scatter-plot")),
+                   *_graph("timeseries-chart", "Click a point to filter by year")],
+                  md=12),
         ], className="mb-4"),
 
         # Row: Q1 lag correlation + regression
