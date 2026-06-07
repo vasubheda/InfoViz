@@ -13,10 +13,13 @@ artifacts) from a **modular app** that only ever reads those artifacts.
 | RQ | View |
 |----|------|
 | Q1 Do seizures move the market? | Within-country, 1-year-lagged seizure→price/purity correlation + per-substance regression facets |
-| Q2 Which markets have the highest markup? | Retail/wholesale heatmaps + highest retail–wholesale markup choropleth |
-| Q3 How do localised seizures affect neighbours? | Cross-border price-arbitrage exposure map (spillover-risk indicator) |
+| Q2 Which markets have the highest markup? | Retail↔wholesale price-ladder (dumbbell) + markup-over-time trend + highest retail–wholesale markup choropleth |
+| Q3 How do localised seizures affect neighbours? | Cross-border price-arbitrage exposure map (spillover-risk indicator — see *Deviation from the proposal* below) |
 | Q4 Which markets are most profitable? | Enforcement-priority composite index (Cleveland dot plot) |
-| Q5 Which drugs to focus on per country? | Semantic-zoom seizure map + priority index |
+| Q5 Which drugs to focus on per country? | Country × substance enforcement-priority heatmap (+ semantic-zoom seizure map) |
+
+The proposal's *quality-adjusted price* feature (price ÷ purity) is surfaced as a
+dedicated raw-vs-purity-normalised price chart by substance.
 
 ## Note on the framework
 
@@ -25,6 +28,19 @@ the project leans heavily on cross-chart brushing & linking, semantic zoom, and
 a year animation — interaction patterns Dash supports natively and robustly. The
 analysis, data, and questions are unchanged; only the rendering framework
 differs.
+
+## Deviation from the proposal: Q3
+
+The proposal framed Q3 as *"how do localised seizure events impact neighbouring
+countries' drug markets?"* — a backward-looking causal effect. With only five
+years of data (2019–2023), a robust cross-border seizure→neighbour-price lag is
+not estimable (too few paired observations per border). We therefore deliver Q3
+as a **cross-border price-arbitrage exposure** indicator: built on geojson
+land-border adjacency, it shows where price gaps make a displaced market more
+profitable across a shared border — a forward-looking spillover-*risk* view
+rather than a measured causal estimate. The analytic intent (cross-border market
+effects) is preserved; only the framing is sharpened to match what 5 years of
+data can support.
 
 ## Data handling highlights
 

@@ -18,12 +18,13 @@ def register(app, data):
         Output("brushing-info", "children"),
         Input("timeseries-chart", "clickData"),
         Input("price-ladder", "clickData"),
+        Input("priority-heatmap", "clickData"),
         Input("margin-map", "clickData"),
         Input("reset-button", "n_clicks"),
         State("selection-store", "data"),
         prevent_initial_call=True,
     )
-    def update_selection(ts_click, ladder_click, margin_click,
+    def update_selection(ts_click, ladder_click, prio_hm_click, margin_click,
                          reset, current):
         trigger = ctx.triggered_id
         sel = dict(current or _empty())
@@ -61,6 +62,15 @@ def register(app, data):
                     sel["subregion"] = (region if "Europe" in region
                                         else f"{region} Europe")
                 return sel, f"Price ladder: {region}, {substance}"
+
+            if trigger == "priority-heatmap" and prio_hm_click:
+                pt = prio_hm_click["points"][0]
+                # customdata = [country, substance]
+                cd = pt.get("customdata") or []
+                if len(cd) >= 2:
+                    sel["country"] = cd[0]
+                    sel["substance"] = cd[1]
+                    return sel, f"Priority: {cd[0]}, {cd[1]}"
         except (KeyError, IndexError, TypeError):
             pass
 

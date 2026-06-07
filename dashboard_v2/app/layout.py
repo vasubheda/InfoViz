@@ -161,6 +161,24 @@ def build_layout(data):
                   md=12),
         ], className="mb-4"),
 
+        # Row: Q2 markup over time
+        dbc.Row([
+            _card("Q2 · Retail–wholesale markup over time",
+                  _graph("margin-trend",
+                         "Relative markup (%) by substance, 2019–2023 — is the "
+                         "gap widening or narrowing?"),
+                  md=12),
+        ], className="mb-4"),
+
+        # Row: quality-adjusted price (proposal feature 5)
+        dbc.Row([
+            _card("§5 · Quality-adjusted price (price ÷ purity) by substance",
+                  _graph("quality-price",
+                         "Raw $/g vs purity-normalised cost — the 'true' price "
+                         "once potency is accounted for."),
+                  md=12),
+        ], className="mb-4"),
+
         # Row: Q2 margin map + Q3 arbitrage map
         dbc.Row([
             _card("Q2 · Highest retail–wholesale markup by country",
@@ -208,14 +226,17 @@ def build_layout(data):
                   _graph("neighbour-map", displaymodebar=False), md=4),
         ], className="mb-4"),
 
-        # Row: Q4 priority dotplot + scatter
+        # Row: Q4 priority dotplot + Q5 priority heatmap
         dbc.Row([
             _card("Q4 · Market profitability / enforcement-priority index",
                   [html.Small("Composite: 40% retail–wholesale markup + 30% retail "
                               "price + 30% inverse seizure pressure. Top substance "
                               "shown per country.", className="text-muted d-block mb-1"),
-                   _loading(dcc.Graph(id="priority-chart", config={"displayModeBar": False}))],
-                  md=12),
+                   _loading(dcc.Graph(id="priority-chart", config={"displayModeBar": False}))]),
+            _card("Q5 · Enforcement priority by country & substance",
+                  _graph("priority-heatmap",
+                         "Darker = higher priority. Click a cell to filter by "
+                         "country & substance.")),
         ], className="mb-4"),
 
         *make_stores(),
