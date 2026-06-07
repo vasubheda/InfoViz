@@ -6,7 +6,8 @@ frozen-panel bug).
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, html
 
-from ..figures import heatmaps, helpers, lag_corr, maps, multivariate, priority, timeseries
+from ..figures import (border_arbitrage, heatmaps, helpers, lag_corr, maps,
+                       multivariate, priority, timeseries)
 from ..figures.filtering import Filters, apply_filters
 from .. import theme
 
@@ -25,6 +26,9 @@ def register(app, data):
         Output("arbitrage-map", "figure"),
         Output("priority-chart", "figure"),
         Output("scatter-plot", "figure"),
+        Output("border-arbitrage-chart", "figure"),
+        Output("border-arbitrage-gaps", "children"),
+        Output("neighbour-map", "figure"),
         Output("kpi-panel", "children"),
         Output("substance-table", "data"),
         Input("substance-table", "selected_rows"),
@@ -92,6 +96,22 @@ def register(app, data):
             arb = maps.arbitrage_map(data, f_prices, arb_country, arb_substance, arb_level)
         prio = priority.priority_dotplot(data, selection, substances, year_range)
         scat = multivariate.scatter(data, f_comb, selection)
+
+        # Border arbitrage needs prices for the selected country AND its
+        # neighbours, so it cannot use the country-brushed frame. Filter by
+        # year + substance only, then let the builder pick out the neighbours.
+        single_country = countries[0] if len(countries) == 1 else None
+        geo_unfiltered = {"country": None, "countries": None,
+                          "substance": selection.get("substance"),
+                          "year": selection.get("year"), "subregion": None}
+        arb_prices = apply_filters(data.prices, filters, geo_unfiltered)
+        arb_seiz = apply_filters(data.seizures, filters, geo_unfiltered)
+        border_arb = border_arbitrage.border_arbitrage(
+            data, arb_prices, arb_seiz, single_country, substances)
+        border_gaps = border_arbitrage.priority_gap_list(
+            data, arb_prices, arb_seiz, single_country, substances)
+        neigh_map = border_arbitrage.neighbour_map(data, single_country)
+
         kpi = _kpi(f_seiz, f_prices)
 
         # The table always lists every substance (so any can be picked); its
@@ -103,7 +123,8 @@ def register(app, data):
         table_data = _substance_rows(all_substances, t_seiz, t_prices, t_comb)
 
         return (enf_map, ts, lag_fig, lag_note, reg_fig, reg_stats, hm_r, hm_w,
-                margin, arb, prio, scat, kpi, table_data)
+                margin, arb, prio, scat, border_arb, border_gaps, neigh_map,
+                kpi, table_data)
 
 
 def _lag_limitations(data):

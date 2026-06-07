@@ -18,6 +18,21 @@ from ..figures.maps import subregion_order
 
 def register(app, data):
     country_subregion = data.prices[["Country", "SubRegion"]].drop_duplicates()
+    # Map a clicked polygon back to its country. Both the base choropleth and the
+    # selection-outline overlay use the europe_gdf row index as `location`, so the
+    # index resolves a click on either trace (the overlay carries no hovertext).
+    idx_to_country = data.europe_gdf["NAME"].to_dict()
+
+    def _clicked_country(click):
+        pt = click["points"][0]
+        # The base choropleth carries hovertext (country NAME) and is the normal
+        # path. The selection-outline overlay carries none, so fall back to its
+        # polygon index, which is the original europe_gdf row index.
+        name = pt.get("hovertext")
+        if name:
+            return name
+        loc = pt.get("location")
+        return idx_to_country.get(loc) if loc is not None else None
 
     def _region_of_trace(restyle):
         """Map a legend restyle event to its subregion name (or None)."""
@@ -54,7 +69,7 @@ def register(app, data):
             return selected
 
         if trigger_prop.endswith("clickData") and click:
-            country = click["points"][0].get("hovertext")
+            country = _clicked_country(click)
             if not country:
                 return no_update
             if country in selected:

@@ -43,7 +43,7 @@ def build_layout(data):
         dbc.Row(dbc.Col([
             html.H1("European Drug-Market Intelligence",
                     className="text-center text-primary mb-2"),
-            html.H5("An evidence base for enforcement prioritisation · "
+            html.H5("An evidence base for enforcement prioritisation using "
                     "prices, purity & seizures, 2019–2023 (UNODC)",
                     className="text-center text-muted mb-3"),
             html.Hr(),
@@ -191,6 +191,23 @@ def build_layout(data):
                               "spillover-risk indicator, not a selling guide.",
                               className="text-muted d-block mb-1"),
                    _loading(dcc.Graph(id="arbitrage-map"))]),
+        ], className="mb-4"),
+
+        # Row: single-country border arbitrage (appears when one country picked)
+        dbc.Row([
+            _card("Q3 · Where to focus border control: best cross-border "
+                  "wholesale→retail arbitrage",
+                  [html.Small("Select a single country on the map. For each land "
+                              "neighbour and substance this shows the more "
+                              "profitable smuggling play — import (buy wholesale "
+                              "next door, sell retail here) or export (vice "
+                              "versa). Longer bars = stronger smuggling incentive "
+                              "at that border.",
+                              className="text-muted d-block mb-1"),
+                   _loading(dcc.Graph(id="border-arbitrage-chart")),
+                   html.Div(id="border-arbitrage-gaps", className="mt-2")], md=8),
+            _card("Selected country & neighbours",
+                  _graph("neighbour-map", displaymodebar=False), md=4),
         ], className="mb-4"),
 
         # Row: Q4 priority dotplot + scatter

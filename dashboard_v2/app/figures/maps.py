@@ -64,11 +64,15 @@ def enforcement_map(data, map_seizures, selection):
     selected = _selected_countries(selection)
     sel_gdf = data.europe_gdf[data.europe_gdf["NAME"].isin(selected)]
     if len(sel_gdf):
+        # hoverinfo="none" (not "skip") so the outline overlay still emits click
+        # events: otherwise it swallows clicks on an already-selected country and
+        # you could never toggle it back off. The click handler resolves the
+        # country from the polygon index, so the missing hovertext is fine.
         fig.add_trace(go.Choropleth(
             geojson=sel_gdf.geometry.__geo_interface__, locations=sel_gdf.index,
             z=[1] * len(sel_gdf), showscale=False, showlegend=False,
             colorscale=[[0, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]],
-            marker_line_color="#111", marker_line_width=2.5, hoverinfo="skip"))
+            marker_line_color="#111", marker_line_width=2.5, hoverinfo="none"))
 
     return helpers.base_geo_layout(fig, right_margin=10)
 
