@@ -6,8 +6,8 @@ frozen-panel bug).
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, html
 
-from ..figures import (border_arbitrage, heatmaps, helpers, lag_corr, maps,
-                       multivariate, priority, timeseries)
+from ..figures import (border_arbitrage, helpers, lag_corr, maps,
+                       multivariate, price_ladder, priority, timeseries)
 from ..figures.filtering import Filters, apply_filters
 from .. import theme
 
@@ -20,8 +20,7 @@ def register(app, data):
         Output("lag-limitations", "children"),
         Output("regression-chart", "figure"),
         Output("regression-stats", "children"),
-        Output("heatmap-retail", "figure"),
-        Output("heatmap-wholesale", "figure"),
+        Output("price-ladder", "figure"),
         Output("margin-map", "figure"),
         Output("arbitrage-map", "figure"),
         Output("priority-chart", "figure"),
@@ -85,11 +84,10 @@ def register(app, data):
         # single region row / a handful of coloured polygons, which misleads, so
         # we swap in an instruction note instead.
         if country_filter_active:
-            hm_r = hm_w = helpers.filter_note_fig(400)
+            ladder = helpers.filter_note_fig(400)
             margin = arb = helpers.filter_note_fig(400)
         else:
-            hm_r = heatmaps.price_heatmap(data, f_prices, "Retail", selection)
-            hm_w = heatmaps.price_heatmap(data, f_prices, "Wholesale", selection)
+            ladder = price_ladder.price_ladder(data, f_prices, selection)
             margin = maps.margin_map(data, selection)
             arb = maps.arbitrage_map(data, f_prices, arb_country, arb_substance, arb_level)
         prio = priority.priority_dotplot(data, selection, substances, year_range)
@@ -119,7 +117,7 @@ def register(app, data):
         t_comb = apply_filters(data.combined, tbl_filters, selection)
         table_data = _substance_rows(all_substances, t_seiz, t_prices, t_comb)
 
-        return (enf_map, ts, lag_fig, lag_note, reg_fig, reg_stats, hm_r, hm_w,
+        return (enf_map, ts, lag_fig, lag_note, reg_fig, reg_stats, ladder,
                 margin, arb, prio, border_arb, border_gaps, neigh_map,
                 kpi, table_data)
 

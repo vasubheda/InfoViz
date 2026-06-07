@@ -151,12 +151,14 @@ def build_layout(data):
                    html.Div(id="regression-stats", className="mt-2 small text-muted")]),
         ], className="mb-4"),
 
-        # Row: Q2 heatmaps
+        # Row: Q2 price ladder
         dbc.Row([
-            _card("Q2 · Retail prices by region & substance",
-                  _graph("heatmap-retail", "Click a cell to filter by region & substance")),
-            _card("Q2 · Wholesale prices by region & substance",
-                  _graph("heatmap-wholesale", "Click a cell to filter by region & substance")),
+            _card("Q2 · Retail vs wholesale price ladder by region & substance",
+                  _graph("price-ladder",
+                         "Each rung links wholesale (●) to retail (○); bar "
+                         "length = markup. Click a rung to filter by region "
+                         "& substance."),
+                  md=12),
         ], className="mb-4"),
 
         # Row: Q2 margin map + Q3 arbitrage map

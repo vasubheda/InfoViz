@@ -17,14 +17,13 @@ def register(app, data):
         Output("selection-store", "data"),
         Output("brushing-info", "children"),
         Input("timeseries-chart", "clickData"),
-        Input("heatmap-retail", "clickData"),
-        Input("heatmap-wholesale", "clickData"),
+        Input("price-ladder", "clickData"),
         Input("margin-map", "clickData"),
         Input("reset-button", "n_clicks"),
         State("selection-store", "data"),
         prevent_initial_call=True,
     )
-    def update_selection(ts_click, hm_r, hm_w, margin_click,
+    def update_selection(ts_click, ladder_click, margin_click,
                          reset, current):
         trigger = ctx.triggered_id
         sel = dict(current or _empty())
@@ -50,18 +49,18 @@ def register(app, data):
                     msg += f" · {grp}"
                 return sel, msg
 
-            if trigger in ("heatmap-retail", "heatmap-wholesale"):
-                click = hm_r if trigger == "heatmap-retail" else hm_w
-                if click:
-                    pt = click["points"][0]
-                    region = pt.get("y")
-                    sel["substance"] = pt.get("x")
-                    # store canonical SubRegion (append ' Europe' if needed)
-                    if region:
-                        sel["subregion"] = (region if "Europe" in region
-                                            else f"{region} Europe")
-                    label = "Retail" if trigger == "heatmap-retail" else "Wholesale"
-                    return sel, f"{label}: {region}, {sel['substance']}"
+            if trigger == "price-ladder" and ladder_click:
+                pt = ladder_click["points"][0]
+                # customdata = [substance, region, ws, rt, markup]
+                cd = pt.get("customdata") or []
+                substance = cd[0] if len(cd) > 0 else pt.get("y")
+                region = cd[1] if len(cd) > 1 else None
+                sel["substance"] = substance
+                # store canonical SubRegion (append ' Europe' if needed)
+                if region:
+                    sel["subregion"] = (region if "Europe" in region
+                                        else f"{region} Europe")
+                return sel, f"Price ladder: {region}, {substance}"
         except (KeyError, IndexError, TypeError):
             pass
 
