@@ -1,0 +1,99 @@
+{
+  "artifact_version": 1,
+  "region": "Europe",
+  "substances": [
+    "Amphetamines",
+    "Cannabis",
+    "Cocaine",
+    "Ecstasy",
+    "Hallucinogens",
+    "Opioids",
+    "Tranquillizers and Sedatives",
+    "Other"
+  ],
+  "source_hashes": {
+    "prices_xlsx": "48dab278577523d3",
+    "seizures_xlsx": "8e5fe2a80f086924",
+    "geojson": "d88906676e59da82"
+  },
+  "row_counts": {
+    "prices": 2313,
+    "purity": 1171,
+    "seizures": 5380,
+    "combined": 403,
+    "inland_margin": 172,
+    "enforcement_metrics": 172,
+    "lag_correlation": 335
+  },
+  "imputation": {
+    "prices": {
+      "Typical_USD": {
+        "originally_missing": 369,
+        "interpolated": 86,
+        "median_country_substance": 229,
+        "median_subregion_substance": 48,
+        "left_missing": 6
+      },
+      "Minimum_USD": {
+        "originally_missing": 322,
+        "interpolated": 46,
+        "median_country_substance": 192,
+        "median_subregion_substance": 84,
+        "left_missing": 0
+      },
+      "Maximum_USD": {
+        "originally_missing": 334,
+        "interpolated": 49,
+        "median_country_substance": 207,
+        "median_subregion_substance": 78,
+        "left_missing": 0
+      }
+    },
+    "purity": {
+      "Typical": {
+        "originally_missing": 103,
+        "interpolated": 31,
+        "median_country_substance": 44,
+        "median_subregion_substance": 28,
+        "left_missing": 0
+      },
+      "Minimum": {
+        "originally_missing": 144,
+        "interpolated": 8,
+        "median_country_substance": 90,
+        "median_subregion_substance": 46,
+        "left_missing": 0
+      },
+      "Maximum": {
+        "originally_missing": 131,
+        "interpolated": 9,
+        "median_country_substance": 106,
+        "median_subregion_substance": 16,
+        "left_missing": 0
+      }
+    },
+    "seizures": {
+      "Kilograms": {
+        "originally_missing": 44,
+        "interpolated": 0,
+        "median_country_substance": 0,
+        "median_subregion_substance": 0,
+        "left_missing": 44
+      }
+    }
+  },
+  "geo_unmatched_countries": [
+    "Gibraltar",
+    "Holy See"
+  ],
+  "lag_params": {
+    "min_pairs": 3,
+    "alpha": 0.05,
+    "method": "within-country seizures(Y) vs target(Y+1); Fisher-z sample-weighted aggregate across countries"
+  },
+  "priority_weights": {
+    "margin": 0.4,
+    "retail": 0.3,
+    "inverse_seizure": 0.3
+  }
+}
