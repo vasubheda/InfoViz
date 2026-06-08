@@ -39,6 +39,17 @@
     color: #343a40;
 }
 
+/* Master-panel section headings: consistent, concise, lightly emphasised. */
+.master-heading {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #495057;
+    margin-bottom: 0.4rem;
+    margin-top: 0;
+}
+
 /* Active-tab accent underline. */
 .detail-tabs .nav-link.active {
     border-bottom: 2px solid #0072B2;
