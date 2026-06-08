@@ -121,9 +121,7 @@ def build_layout(data):
                     ], className="g-2 mb-4"),
                     dbc.Row([
                         _card("Trends over time",
-                              _graph("timeseries-chart",
-                                     "Seizures, price & purity over time — click "
-                                     "a point to filter by year"),
+                              _graph("timeseries-chart"),
                               md=12),
                     ], className="mb-4"),
                 ]),

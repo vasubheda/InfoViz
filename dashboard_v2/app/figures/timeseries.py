@@ -77,9 +77,9 @@ def timeseries(data, filtered_combined, selection, year_range, height=560):
 
     fig.update_layout(
         hovermode="x unified", height=height,
-        legend=dict(title="Substance", orientation="v", yanchor="middle", y=0.5,
-                    xanchor="left", x=1.02, bgcolor="rgba(255,255,255,0.9)",
+        legend=dict(title="Substance", orientation="h", yanchor="top", y=-0.08,
+                    xanchor="center", x=0.5, bgcolor="rgba(255,255,255,0.9)",
                     bordercolor="#333", borderwidth=1),
-        margin=dict(l=50, r=150, t=50, b=60),
+        margin=dict(l=50, r=30, t=50, b=90),
         plot_bgcolor=theme.PLOT_BG)
     return fig
