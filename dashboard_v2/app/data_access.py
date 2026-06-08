@@ -35,6 +35,7 @@ class AppData:
     geo_lookup: dict
     manifest: dict
     substance_color_map: dict = field(default_factory=dict)
+    subregion_color_map: dict = field(default_factory=dict)
 
     # --- convenience accessors ---------------------------------------------
     @property
@@ -82,5 +83,8 @@ def load_artifacts(version: int = ARTIFACT_VERSION) -> AppData:
     )
     data.substance_color_map = theme.substance_color_map(
         set(data.combined["Substance"]) | set(data.prices["Substance"])
+    )
+    data.subregion_color_map = theme.subregion_color_map(
+        set(data.prices["SubRegion"].dropna())
     )
     return data

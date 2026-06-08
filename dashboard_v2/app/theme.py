@@ -30,3 +30,13 @@ IMPUTED_MARKER = dict(symbol="circle-open", line=dict(width=2, dash="dot"))
 def substance_color_map(substances) -> dict:
     """Deterministic substance -> hex assignment, cycling the Tol palette."""
     return {s: TOL_MUTED[i % len(TOL_MUTED)] for i, s in enumerate(sorted(substances))}
+
+
+def subregion_color_map(subregions) -> dict:
+    """Deterministic subregion -> hex, drawn from the TAIL of the Tol palette so
+    subregion colours never collide with substance colours (which use the head;
+    see substance_color_map). With our data substances claim the first 7 slots
+    (incl. the never-displayed 'Other'), leaving exactly the last three
+    (#DDDDDD/#AA4499/#882255) free — so the tail is the only disjoint band."""
+    tail = list(reversed(TOL_MUTED))
+    return {sr: tail[i % len(tail)] for i, sr in enumerate(sorted(subregions))}

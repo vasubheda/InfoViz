@@ -34,8 +34,7 @@ def enforcement_map(data, map_seizures, selection):
     """
     country_subregion = data.prices[["Country", "SubRegion"]].drop_duplicates()
     order = subregion_order(data)
-    colors = {sr: theme.TOL_MUTED[i % len(theme.TOL_MUTED)]
-              for i, sr in enumerate(order)}
+    colors = theme.subregion_color_map(order)
     gdf = data.europe_gdf.merge(country_subregion, how="left",
                                 left_on="NAME", right_on="Country")
     valid = gdf.dropna(subset=["SubRegion"]).copy()
