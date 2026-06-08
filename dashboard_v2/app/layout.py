@@ -58,169 +58,210 @@ def build_layout(data):
             "seizure volumes are never imputed (a missing year is not a zero).",
         ], color="info", dismissable=True, className="mb-3"))),
 
-        # KPI panel (with merged linked-selection controls in the header)
-        dbc.Row(dbc.Col(dbc.Card([
-            dbc.CardHeader(dbc.Row([
-                dbc.Col(html.H5("Key indicators", className="mb-0"),
-                        width="auto", className="d-flex align-items-center"),
-                dbc.Col([
-                    html.Strong("Linked selection: ", className="me-1"),
-                    html.Span(id="brushing-info",
-                              children="Click any chart to filter the rest."),
-                ], className="d-flex align-items-center text-muted small"),
-                dbc.Col(dbc.Button("Reset selection", id="reset-button",
-                                   color="danger", size="sm"),
-                        width="auto", className="d-flex align-items-center"),
-            ], className="g-2 justify-content-between flex-nowrap")),
-            dbc.CardBody([
-                html.Label("Year range:", className="fw-bold"),
-                dcc.RangeSlider(id="year-slider", min=data.year_min,
-                                max=data.year_max,
-                                value=[data.year_min, data.year_max],
-                                marks={y: str(y) for y in years}, step=1,
-                                className="mb-3"),
-                _loading(html.Div(id="kpi-panel")),
-                html.H6("Where & what: regions and countries", className="mb-1"),
-                *_graph("enforcement-map"),
-                html.Small("Click a substance in the legend to filter every "
-                           "chart by substance (none selected = all "
-                           "substances). Deselected bars stay shown but dimmed.",
-                           className="text-muted d-block mb-1 mt-3"),
-                html.Div(id="substance-legend",
-                         className="d-flex flex-wrap mb-2"),
-                dbc.Row([
-                    dbc.Col(_graph("ki-seizures-bar", displaymodebar=False),
-                            md=4),
-                    dbc.Col(_graph("ki-price-bar", displaymodebar=False), md=4),
-                    dbc.Col(_graph("ki-purity-bar", displaymodebar=False), md=4),
-                ], className="g-2"),
-            ]),
-        ])), className="mb-4"),
-
-        # Row: time series (Q5 / overview)
+        # Master–detail body: a sticky selection hub on the left, the
+        # research-question-tabbed analytical charts on the right.
         dbc.Row([
-            _card("Trends over time",
-                  _graph("timeseries-chart",
-                         "Seizures, price & purity over time — click a point to "
-                         "filter by year"),
-                  md=12),
-        ], className="mb-4"),
+            # ---- MASTER (left, sticky): the selection hub ----
+            dbc.Col(dbc.Card([
+                dbc.CardHeader(dbc.Row([
+                    dbc.Col(html.H5("Key indicators", className="mb-0"),
+                            width="auto", className="d-flex align-items-center"),
+                    dbc.Col(dbc.Button("Reset selection", id="reset-button",
+                                       color="danger", size="sm"),
+                            width="auto", className="d-flex align-items-center"),
+                ], className="g-2 justify-content-between flex-nowrap")),
+                dbc.CardBody([
+                    html.Div([
+                        html.Strong("Linked selection: ", className="me-1"),
+                        html.Span(id="brushing-info",
+                                  children="Click any chart to filter the rest."),
+                    ], className="text-muted small mb-3"),
+                    html.Label("Year range:", className="fw-bold"),
+                    dcc.RangeSlider(id="year-slider", min=data.year_min,
+                                    max=data.year_max,
+                                    value=[data.year_min, data.year_max],
+                                    marks={y: str(y) for y in years}, step=1,
+                                    className="mb-3"),
+                    _loading(html.Div(id="kpi-panel")),
+                    html.H6("Where & what: regions and countries", className="mb-1"),
+                    *_graph("enforcement-map"),
+                    html.Small("Click a substance in the legend to filter every "
+                               "chart by substance (none selected = all "
+                               "substances). Deselected bars stay shown but dimmed.",
+                               className="text-muted d-block mb-1 mt-3"),
+                    html.Div(id="substance-legend",
+                             className="d-flex flex-wrap mb-2"),
+                    dbc.Row([
+                        dbc.Col(_graph("ki-seizures-bar", displaymodebar=False),
+                                md=4),
+                        dbc.Col(_graph("ki-price-bar", displaymodebar=False), md=4),
+                        dbc.Col(_graph("ki-purity-bar", displaymodebar=False), md=4),
+                    ], className="g-2"),
+                ]),
+            ]), md=4,
+                style={"position": "sticky", "top": "1rem",
+                       "alignSelf": "flex-start"}),
 
-        # Row: Q1 lag correlation + regression
-        dbc.Row([
-            _card("Q1 · Do seizures move the market? (within-country, +1yr lag)",
-                  [html.Small("Pearson r between seizures in year Y and street price "
-                              "in Y+1, computed per country then aggregated "
-                              "(Fisher-z, sample-weighted). Select a country to see "
-                              "its own correlations.",
-                              className="text-muted d-block mb-2"),
-                   _loading(dcc.Graph(id="lag-correlation-chart",
-                             config={"displayModeBar": False})),
-                   html.Div(id="lag-limitations", className="small text-muted mt-2")]),
-            _card("Q1 · Correlation detail by substance",
-                  [dbc.Row([
-                      dbc.Col(dcc.Dropdown(id="x-axis", clearable=False,
-                              value="Kilograms", className="small",
-                              options=[{"label": "Kilograms seized", "value": "Kilograms"},
-                                       {"label": "Price (USD/g)", "value": "Typical_USD"},
-                                       {"label": "Purity (%)", "value": "Typical"}]), md=6),
-                      dbc.Col(dcc.Dropdown(id="y-axis", clearable=False,
-                              value="Typical_USD", className="small",
-                              options=[{"label": "Price (USD/g)", "value": "Typical_USD"},
-                                       {"label": "Purity (%)", "value": "Typical"},
-                                       {"label": "Kilograms seized", "value": "Kilograms"}]), md=6),
-                  ], className="mb-2"),
-                   _loading(dcc.Graph(id="regression-chart")),
-                   html.Div(id="regression-stats", className="mt-2 small text-muted")]),
-        ], className="mb-4"),
+            # ---- DETAIL (right): research-question tabs ----
+            # The tab bar is only a selector; every panel below stays mounted so
+            # the single figures mega-callback (writes all graphs at once) and
+            # the brushing callbacks keep working. Visibility is toggled in
+            # callbacks/tabs.py via each panel's `style`.
+            dbc.Col([
+                dbc.Tabs(id="detail-tabs", active_tab="tab-q1", children=[
+                    dbc.Tab(label="Q1 · Do seizures move the market?",
+                            tab_id="tab-q1"),
+                    dbc.Tab(label="Q2 · Profitability & markup", tab_id="tab-q2"),
+                    dbc.Tab(label="Q3 · Cross-border spillover", tab_id="tab-q3"),
+                    dbc.Tab(label="Q4/Q5 · Enforcement priority", tab_id="tab-q45"),
+                ], className="mb-3"),
 
-        # Row: Q2 price ladder
-        dbc.Row([
-            _card("Q2 · Retail vs wholesale price ladder by region & substance",
-                  _graph("price-ladder",
-                         "Each rung links wholesale (●) to retail (○); bar "
-                         "length = markup. Click a rung to filter by region "
-                         "& substance."),
-                  md=12),
-        ], className="mb-4"),
+                # --- Panel Q1: seizures -> market, with time-series context ---
+                html.Div(id="panel-q1", children=[
+                    dbc.Row([
+                        _card("Q1 · Do seizures move the market? "
+                              "(within-country, +1yr lag)",
+                              [html.Small("Pearson r between seizures in year Y "
+                                          "and street price in Y+1, computed per "
+                                          "country then aggregated (Fisher-z, "
+                                          "sample-weighted). Select a country to "
+                                          "see its own correlations.",
+                                          className="text-muted d-block mb-2"),
+                               _loading(dcc.Graph(id="lag-correlation-chart",
+                                         config={"displayModeBar": False})),
+                               html.Div(id="lag-limitations",
+                                        className="small text-muted mt-2")]),
+                        _card("Q1 · Correlation detail by substance",
+                              [dbc.Row([
+                                  dbc.Col(dcc.Dropdown(id="x-axis", clearable=False,
+                                          value="Kilograms", className="small",
+                                          options=[{"label": "Kilograms seized", "value": "Kilograms"},
+                                                   {"label": "Price (USD/g)", "value": "Typical_USD"},
+                                                   {"label": "Purity (%)", "value": "Typical"}]), md=6),
+                                  dbc.Col(dcc.Dropdown(id="y-axis", clearable=False,
+                                          value="Typical_USD", className="small",
+                                          options=[{"label": "Price (USD/g)", "value": "Typical_USD"},
+                                                   {"label": "Purity (%)", "value": "Typical"},
+                                                   {"label": "Kilograms seized", "value": "Kilograms"}]), md=6),
+                              ], className="mb-2"),
+                               _loading(dcc.Graph(id="regression-chart")),
+                               html.Div(id="regression-stats",
+                                        className="mt-2 small text-muted")]),
+                    ], className="mb-4"),
+                    dbc.Row([
+                        _card("Trends over time",
+                              _graph("timeseries-chart",
+                                     "Seizures, price & purity over time — click "
+                                     "a point to filter by year"),
+                              md=12),
+                    ], className="mb-4"),
+                ]),
 
-        # Row: Q2 markup over time
-        dbc.Row([
-            _card("Q2 · Retail–wholesale markup over time",
-                  _graph("margin-trend",
-                         "Relative markup (%) by substance, 2019–2023 — is the "
-                         "gap widening or narrowing?"),
-                  md=12),
-        ], className="mb-4"),
+                # --- Panel Q2: profitability & markup ---
+                html.Div(id="panel-q2", children=[
+                    dbc.Row([
+                        _card("Q2 · Retail vs wholesale price ladder by region "
+                              "& substance",
+                              _graph("price-ladder",
+                                     "Each rung links wholesale (●) to retail "
+                                     "(○); bar length = markup. Click a rung to "
+                                     "filter by region & substance."),
+                              md=12),
+                    ], className="mb-4"),
+                    dbc.Row([
+                        _card("Q2 · Retail–wholesale markup over time",
+                              _graph("margin-trend",
+                                     "Relative markup (%) by substance, "
+                                     "2019–2023 — is the gap widening or "
+                                     "narrowing?"),
+                              md=12),
+                    ], className="mb-4"),
+                    dbc.Row([
+                        _card("§5 · Quality-adjusted price (price ÷ purity) by "
+                              "substance",
+                              _graph("quality-price",
+                                     "Raw $/g vs purity-normalised cost — the "
+                                     "'true' price once potency is accounted "
+                                     "for."),
+                              md=12),
+                    ], className="mb-4"),
+                    dbc.Row([
+                        _card("Q2 · Highest retail–wholesale markup by country",
+                              _graph("margin-map", "Click a country to filter"),
+                              md=12),
+                    ], className="mb-4"),
+                ]),
 
-        # Row: quality-adjusted price (proposal feature 5)
-        dbc.Row([
-            _card("§5 · Quality-adjusted price (price ÷ purity) by substance",
-                  _graph("quality-price",
-                         "Raw $/g vs purity-normalised cost — the 'true' price "
-                         "once potency is accounted for."),
-                  md=12),
-        ], className="mb-4"),
+                # --- Panel Q3: cross-border spillover ---
+                html.Div(id="panel-q3", children=[
+                    dbc.Row([
+                        _card("Q3 · Cross-border price-arbitrage exposure",
+                              [dbc.Row([
+                                  dbc.Col([html.Label("Reference country:", className="fw-bold small"),
+                                           dcc.Dropdown(id="arb-country", clearable=False,
+                                               className="small mb-2",
+                                               options=[{"label": c, "value": c} for c in data.countries],
+                                               value=data.countries[0])], md=4),
+                                  dbc.Col([html.Label("Substance:", className="fw-bold small"),
+                                           dcc.Dropdown(id="arb-substance", clearable=False,
+                                               className="small mb-2",
+                                               options=[{"label": s, "value": s} for s in substances],
+                                               value=substances[0])], md=4),
+                                  dbc.Col([html.Label("Level:", className="fw-bold small"),
+                                           dcc.Dropdown(id="arb-level", clearable=False,
+                                               className="small mb-2",
+                                               options=[{"label": "Retail", "value": "Retail"},
+                                                        {"label": "Wholesale", "value": "Wholesale"}],
+                                               value="Retail")], md=4),
+                              ]),
+                               html.Small("Δ price vs the reference country "
+                                          "signals where a displaced market "
+                                          "could be more profitable — a "
+                                          "spillover-risk indicator, not a "
+                                          "selling guide.",
+                                          className="text-muted d-block mb-1"),
+                               _loading(dcc.Graph(id="arbitrage-map"))], md=12),
+                    ], className="mb-4"),
+                    dbc.Row([
+                        _card("Q3 · Where to focus border control: best "
+                              "cross-border wholesale→retail arbitrage",
+                              [html.Small("Select a single country on the map. "
+                                          "For each land neighbour and substance "
+                                          "this shows the more profitable "
+                                          "smuggling play — import (buy wholesale "
+                                          "next door, sell retail here) or export "
+                                          "(vice versa). Longer bars = stronger "
+                                          "smuggling incentive at that border.",
+                                          className="text-muted d-block mb-1"),
+                               _loading(dcc.Graph(id="border-arbitrage-chart")),
+                               html.Div(id="border-arbitrage-gaps",
+                                        className="mt-2")], md=8),
+                        _card("Selected country & neighbours",
+                              _graph("neighbour-map", displaymodebar=False),
+                              md=4),
+                    ], className="mb-4"),
+                ]),
 
-        # Row: Q2 margin map + Q3 arbitrage map
-        dbc.Row([
-            _card("Q2 · Highest retail–wholesale markup by country",
-                  _graph("margin-map", "Click a country to filter")),
-            _card("Q3 · Cross-border price-arbitrage exposure",
-                  [dbc.Row([
-                      dbc.Col([html.Label("Reference country:", className="fw-bold small"),
-                               dcc.Dropdown(id="arb-country", clearable=False,
-                                   className="small mb-2",
-                                   options=[{"label": c, "value": c} for c in data.countries],
-                                   value=data.countries[0])], md=4),
-                      dbc.Col([html.Label("Substance:", className="fw-bold small"),
-                               dcc.Dropdown(id="arb-substance", clearable=False,
-                                   className="small mb-2",
-                                   options=[{"label": s, "value": s} for s in substances],
-                                   value=substances[0])], md=4),
-                      dbc.Col([html.Label("Level:", className="fw-bold small"),
-                               dcc.Dropdown(id="arb-level", clearable=False,
-                                   className="small mb-2",
-                                   options=[{"label": "Retail", "value": "Retail"},
-                                            {"label": "Wholesale", "value": "Wholesale"}],
-                                   value="Retail")], md=4),
-                  ]),
-                   html.Small("Δ price vs the reference country signals where a "
-                              "displaced market could be more profitable — a "
-                              "spillover-risk indicator, not a selling guide.",
-                              className="text-muted d-block mb-1"),
-                   _loading(dcc.Graph(id="arbitrage-map"))]),
-        ], className="mb-4"),
-
-        # Row: single-country border arbitrage (appears when one country picked)
-        dbc.Row([
-            _card("Q3 · Where to focus border control: best cross-border "
-                  "wholesale→retail arbitrage",
-                  [html.Small("Select a single country on the map. For each land "
-                              "neighbour and substance this shows the more "
-                              "profitable smuggling play — import (buy wholesale "
-                              "next door, sell retail here) or export (vice "
-                              "versa). Longer bars = stronger smuggling incentive "
-                              "at that border.",
-                              className="text-muted d-block mb-1"),
-                   _loading(dcc.Graph(id="border-arbitrage-chart")),
-                   html.Div(id="border-arbitrage-gaps", className="mt-2")], md=8),
-            _card("Selected country & neighbours",
-                  _graph("neighbour-map", displaymodebar=False), md=4),
-        ], className="mb-4"),
-
-        # Row: Q4 priority dotplot + Q5 priority heatmap
-        dbc.Row([
-            _card("Q4 · Market profitability / enforcement-priority index",
-                  [html.Small("Composite: 40% retail–wholesale markup + 30% retail "
-                              "price + 30% inverse seizure pressure. Top substance "
-                              "shown per country.", className="text-muted d-block mb-1"),
-                   _loading(dcc.Graph(id="priority-chart", config={"displayModeBar": False}))]),
-            _card("Q5 · Enforcement priority by country & substance",
-                  _graph("priority-heatmap",
-                         "Darker = higher priority. Click a cell to filter by "
-                         "country & substance.")),
-        ], className="mb-4"),
+                # --- Panel Q4/Q5: enforcement priority ---
+                html.Div(id="panel-q45", children=[
+                    dbc.Row([
+                        _card("Q4 · Market profitability / enforcement-priority "
+                              "index",
+                              [html.Small("Composite: 40% retail–wholesale "
+                                          "markup + 30% retail price + 30% "
+                                          "inverse seizure pressure. Top "
+                                          "substance shown per country.",
+                                          className="text-muted d-block mb-1"),
+                               _loading(dcc.Graph(id="priority-chart",
+                                         config={"displayModeBar": False}))]),
+                        _card("Q5 · Enforcement priority by country & substance",
+                              _graph("priority-heatmap",
+                                     "Darker = higher priority. Click a cell to "
+                                     "filter by country & substance.")),
+                    ], className="mb-4"),
+                ]),
+            ], md=8),
+        ], className="g-3 mb-4"),
 
         *make_stores(),
 
