@@ -1,0 +1,46 @@
+/* Shared detail-view styling. Dash auto-serves everything under app/assets/.
+   Palette hexes mirror app/theme.py (CSS can't import it): ACCENT_ALT #0072B2,
+   borders #dee2e6. */
+
+/* Per-tab lead-in: a one-line framing of the question + audience. */
+.detail-lead {
+    color: #6c757d;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+    padding: 0.4rem 0 0.4rem 0.75rem;
+    border-left: 3px solid #0072B2;
+}
+
+/* Detail cards: distinct surfaces against the #f8f9fa page, with a light
+   hover lift instead of a hard border. */
+.detail-card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.detail-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10), 0 2px 4px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+}
+
+/* Lighter, less dominant card headers. */
+.detail-card .card-header {
+    background-color: transparent;
+    border-bottom: 1px solid #eceef0;
+    padding: 0.65rem 1rem;
+}
+
+.detail-card .card-header h5 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #343a40;
+}
+
+/* Active-tab accent underline. */
+.detail-tabs .nav-link.active {
+    border-bottom: 2px solid #0072B2;
+    font-weight: 600;
+}

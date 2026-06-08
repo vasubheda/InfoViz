@@ -21,11 +21,16 @@ def _graph(graph_id, hint=None, displaymodebar=True):
     return children
 
 
-def _card(title, body, md=6):
+def _lead(text):
+    """One-line framing of a tab's research question + intended audience."""
+    return html.P(text, className="detail-lead")
+
+
+def _card(title, body, md=6, className="detail-card"):
     return dbc.Col(dbc.Card([
         dbc.CardHeader(html.H5(title, className="mb-0")),
         dbc.CardBody(body),
-    ]), md=md)
+    ], className=className), md=md)
 
 
 def build_layout(data):
@@ -86,7 +91,8 @@ def build_layout(data):
             # callbacks/tabs.py via each panel's `style`.
             dbc.Col([
                 html.Div(
-                    dbc.Tabs(id="detail-tabs", active_tab="tab-overview", children=[
+                    dbc.Tabs(id="detail-tabs", active_tab="tab-overview",
+                             className="detail-tabs", children=[
                         dbc.Tab(label="Overview", tab_id="tab-overview"),
                         dbc.Tab(label="Q1 · Do seizures move the market?",
                                 tab_id="tab-q1"),
@@ -106,6 +112,9 @@ def build_layout(data):
 
                 # --- Panel Overview: KPI chips, substance bars, time series ---
                 html.Div(id="panel-overview", children=[
+                    _lead("Market at a glance: totals, the substance mix, and "
+                          "how prices, purity & seizures move together over "
+                          "2019–2023."),
                     _loading(html.Div(id="kpi-panel")),
                     dbc.Row([
                         dbc.Col(_graph("ki-seizures-bar", displaymodebar=False),
@@ -126,6 +135,8 @@ def build_layout(data):
 
                 # --- Panel Q1: seizures -> market ---
                 html.Div(id="panel-q1", children=[
+                    _lead("Analyst view — does a seizure spike move street "
+                          "prices a year later?"),
                     dbc.Row([
                         _card("Q1 · Do seizures move the market? "
                               "(within-country, +1yr lag)",
@@ -160,6 +171,8 @@ def build_layout(data):
 
                 # --- Panel Q2: profitability & markup ---
                 html.Div(id="panel-q2", children=[
+                    _lead("Pricing & markup view — where the wholesale→retail "
+                          "margin sits and how it shifts over time."),
                     dbc.Row([
                         _card("Q2 · Retail vs wholesale price ladder by region "
                               "& substance",
@@ -175,16 +188,14 @@ def build_layout(data):
                                      "Relative markup (%) by substance, "
                                      "2019–2023 — is the gap widening or "
                                      "narrowing?"),
-                              md=12),
-                    ], className="mb-4"),
-                    dbc.Row([
+                              md=6),
                         _card("§5 · Quality-adjusted price (price ÷ purity) by "
                               "substance",
                               _graph("quality-price",
                                      "Raw $/g vs purity-normalised cost — the "
                                      "'true' price once potency is accounted "
                                      "for."),
-                              md=12),
+                              md=6),
                     ], className="mb-4"),
                     dbc.Row([
                         _card("Q2 · Highest retail–wholesale markup by country",
@@ -195,6 +206,8 @@ def build_layout(data):
 
                 # --- Panel Q3: cross-border spillover ---
                 html.Div(id="panel-q3", children=[
+                    _lead("Border-control view — where cross-border price gaps "
+                          "create smuggling incentives."),
                     dbc.Row([
                         _card("Q3 · Cross-border price-arbitrage exposure",
                               [dbc.Row([
@@ -245,6 +258,8 @@ def build_layout(data):
 
                 # --- Panel Q4/Q5: enforcement priority ---
                 html.Div(id="panel-q45", children=[
+                    _lead("Prioritisation view — which country × substance "
+                          "markets warrant the most enforcement attention."),
                     dbc.Row([
                         _card("Q4 · Market profitability / enforcement-priority "
                               "index",

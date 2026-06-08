@@ -125,7 +125,7 @@ def register(app, data):
         ki_seiz, ki_price, ki_purity = key_indicators.substance_bars(
             data, all_substances, active_store, t_seiz, t_prices, t_comb)
         subst_cards = key_indicators.substance_cards(
-            data, all_substances, active_store, t_seiz)
+            data, all_substances, active_store)
 
         return (enf_map, ts, lag_fig, lag_note, reg_fig, reg_stats, ladder,
                 m_trend, qprice, prio_hm,

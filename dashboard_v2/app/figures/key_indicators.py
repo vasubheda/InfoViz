@@ -88,12 +88,11 @@ def substance_bars(data, all_substances, active, seiz, prices, comb, height=260)
     return fig_seiz, fig_price, fig_purity
 
 
-def substance_cards(data, all_substances, active, seiz):
+def substance_cards(data, all_substances, active):
     """Clickable substance selection cards that act as the substance filter.
 
-    One card per substance: a colour dot, the name, and a headline metric (total
-    seizures in tonnes under the current year + map filters). Deselected cards
-    render dimmed but stay visible/clickable. Each carries the same
+    One card per substance: a colour dot and the substance name. Deselected
+    cards render dimmed but stay visible/clickable. Each carries the same
     pattern-matching id the toggle callback already listens on, so the wiring is
     unchanged from the old legend swatches.
     """
@@ -101,17 +100,11 @@ def substance_cards(data, all_substances, active, seiz):
     from dash import html
 
     active_set = _active_set(all_substances, active)
-    seiz_by = (seiz.groupby("Substance")["Kilograms"].sum() / 1000
-               if seiz is not None and len(seiz) else None)
 
     cards = []
     for s in all_substances:
         on = s in active_set
         color = data.substance_color_map.get(s, theme.TOL_MUTED[0])
-        if seiz_by is not None and s in seiz_by.index and seiz_by[s] == seiz_by[s]:
-            metric = f"{float(seiz_by[s]):,.1f} t"
-        else:
-            metric = "n/a"
         # The clickable affordance lives on an outer Div (dbc.Card has no
         # n_clicks); the Card inside is purely visual. The Div keeps the
         # pattern-matching id the toggle callback already listens on.
@@ -125,8 +118,6 @@ def substance_cards(data, all_substances, active, seiz):
                 html.Span(s, className="fw-bold" if on else None,
                           style={"fontSize": "0.8rem"}),
             ], className="d-flex align-items-center"),
-            html.Div(metric, className="text-muted",
-                     style={"fontSize": "0.75rem", "marginLeft": "17px"}),
         ], className="p-2"),
             style={
                 "borderColor": color if on else "#dee2e6",

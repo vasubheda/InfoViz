@@ -14,7 +14,7 @@ METRICS = [
 ]
 
 
-def timeseries(data, filtered_combined, selection, year_range, height=750):
+def timeseries(data, filtered_combined, selection, year_range, height=560):
     """Three stacked line charts — one per metric — sharing a single legend."""
     if len(filtered_combined) == 0:
         return helpers.empty_fig("No data for selected filters", height)
