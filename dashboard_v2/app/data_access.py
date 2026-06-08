@@ -34,6 +34,10 @@ class AppData:
     europe_gdf: gpd.GeoDataFrame
     geo_lookup: dict
     manifest: dict
+    # Outer-joined counterpart to `combined`: built at load (see _build_combined_outer)
+    # so the time-series can show substances with price/purity but no seizure
+    # coverage (e.g. Amphetamines), which the inner-joined `combined` drops.
+    combined_outer: pd.DataFrame = None
     substance_color_map: dict = field(default_factory=dict)
     subregion_color_map: dict = field(default_factory=dict)
 
@@ -65,6 +69,40 @@ class AppData:
         return sorted(self.prices["SubRegion"].dropna().unique())
 
 
+def _build_combined_outer(prices, purity, seizures) -> pd.DataFrame:
+    """Outer-joined [Country, Substance, Year] frame for the time-series.
+
+    Mirrors the pipeline's inner-joined `build_combined` but joins with
+    how='outer', so a substance present in only some sources (e.g. Amphetamines:
+    price + purity, no seizures) keeps its rows. Metrics absent for a given
+    (Country, Substance, Year) stay NaN — the time-series draws a gap there,
+    not a misleading zero. Imputation flags default to False where missing.
+    """
+    price_avg = (prices.groupby(["Country", "Substance", "Year"])
+                 .agg(Typical_USD=("Typical_USD", "mean"),
+                      price_imputed=("Typical_USD_is_imputed", "max"))
+                 .reset_index())
+    purity_avg = (purity.groupby(["Country", "Substance", "Year"])
+                  .agg(Typical=("Typical", "mean"),
+                       purity_imputed=("Typical_is_imputed", "max"))
+                  .reset_index())
+    seiz_sum = (seizures.groupby(["Country", "Substance", "Year"])
+                .agg(Kilograms=("Kilograms", "sum"),
+                     seizure_imputed=("Kilograms_is_imputed", "max"))
+                .reset_index())
+    keys = ["Country", "Substance", "Year"]
+    out = price_avg.merge(purity_avg, on=keys, how="outer")
+    out = out.merge(seiz_sum, on=keys, how="outer")
+
+    subregion = prices[["Country", "SubRegion"]].drop_duplicates()
+    out = out.merge(subregion, on="Country", how="left")
+    for c in ("price_imputed", "purity_imputed", "seizure_imputed"):
+        out[c] = out[c].fillna(False).astype(bool)
+    out["any_imputed"] = out[
+        ["price_imputed", "purity_imputed", "seizure_imputed"]].any(axis=1)
+    return out.reset_index(drop=True)
+
+
 def load_artifacts(version: int = ARTIFACT_VERSION) -> AppData:
     clean = DATA_DIR / "clean" / f"v{version}"
     manifest_path = clean / "manifest.json"
@@ -81,6 +119,8 @@ def load_artifacts(version: int = ARTIFACT_VERSION) -> AppData:
     data = AppData(
         europe_gdf=europe_gdf, geo_lookup=geo_lookup, manifest=manifest, **frames,
     )
+    data.combined_outer = _build_combined_outer(data.prices, data.purity,
+                                                 data.seizures)
     data.substance_color_map = theme.substance_color_map(
         set(data.combined["Substance"]) | set(data.prices["Substance"])
     )

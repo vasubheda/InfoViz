@@ -29,7 +29,12 @@ def timeseries(data, filtered_combined, selection, year_range, height=560):
 
     legend_seen = set()
     for row, (col, transform, y_label, imp_col, agg) in enumerate(METRICS, start=1):
-        grouped = (filtered_combined.groupby(["Year", "Substance"])
+        # Drop rows where this metric is absent (the outer-joined frame carries
+        # NaN there) BEFORE aggregating, so a substance with no data for this
+        # metric (e.g. Amphetamines seizures) draws a gap, not a flat-zero line
+        # from summing all-NaN.
+        present = filtered_combined.dropna(subset=[col])
+        grouped = (present.groupby(["Year", "Substance"])
                    .agg(val=(col, agg), imp=(imp_col, "max")).reset_index())
         grouped["Value"] = transform(grouped["val"])
         grouped["Year"] = grouped["Year"].astype(int)

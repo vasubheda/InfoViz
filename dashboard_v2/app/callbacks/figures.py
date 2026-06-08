@@ -73,9 +73,13 @@ def register(app, data):
         f_prices = apply_filters(data.prices, filters, selection)
         f_seiz = apply_filters(data.seizures, filters, selection)
         f_comb = apply_filters(data.combined, filters, selection)
+        # The time-series uses the outer-joined frame so substances with price/
+        # purity but no seizures (e.g. Amphetamines) still draw their lines;
+        # the other f_comb consumers keep the strict inner-joined `combined`.
+        f_comb_outer = apply_filters(data.combined_outer, filters, selection)
 
         enf_map = maps.enforcement_map(data, f_seiz, selection)
-        ts = timeseries.timeseries(data, f_comb, selection, year_range)
+        ts = timeseries.timeseries(data, f_comb_outer, selection, year_range)
         lag_fig = lag_corr.lag_correlation(data, selection,
                                            target=("Typical_USD" if y_axis != "Typical"
                                                    else "Typical"))
