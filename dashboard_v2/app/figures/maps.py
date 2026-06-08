@@ -51,8 +51,6 @@ def enforcement_map(data, map_seizures, selection):
         valid, geojson=valid.geometry.__geo_interface__, locations=valid.index,
         color="SubRegion", hover_name="NAME", color_discrete_map=colors,
         category_orders={"SubRegion": order}, hover_data={"Tons": ":.1f"},
-        title="Click a country to select it, click a region in the legend "
-              "to toggle the whole region",
     )
     fig.update_layout(legend=dict(title="Subregion", orientation="v",
                       yanchor="middle", y=0.5, xanchor="left", x=1.02,

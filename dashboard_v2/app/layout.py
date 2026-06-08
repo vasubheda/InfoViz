@@ -5,7 +5,6 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 
 from .components.stores import make_stores
-from .figures.helpers import imputed_legend_note
 
 
 def _loading(component):
@@ -32,11 +31,6 @@ def _card(title, body, md=6):
 def build_layout(data):
     substances = data.substances
     years = list(range(data.year_min, data.year_max + 1))
-    imp = data.manifest["imputation"]
-    total_imputed = sum(
-        s.get("interpolated", 0) + s.get("median_country_substance", 0)
-        + s.get("median_subregion_substance", 0)
-        for table in imp.values() for s in table.values())
 
     return dbc.Container([
         # Header
@@ -48,15 +42,6 @@ def build_layout(data):
                     className="text-center text-muted mb-3"),
             html.Hr(),
         ])),
-
-        # Methodology / accessibility banner
-        dbc.Row(dbc.Col(dbc.Alert([
-            html.Strong("Reading this dashboard. "),
-            "All palettes are colourblind-safe (Paul Tol Muted; Viridis; RdBu "
-            "diverging). ", html.Em(imputed_legend_note()), ". ",
-            f"{total_imputed} sporadically-missing values were imputed and flagged; "
-            "seizure volumes are never imputed (a missing year is not a zero).",
-        ], color="info", dismissable=True, className="mb-3"))),
 
         # Master–detail body: a sticky selection hub on the left, the
         # research-question-tabbed analytical charts on the right.
