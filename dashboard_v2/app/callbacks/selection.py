@@ -6,8 +6,6 @@ fragile ' Europe' string surgery / positional geodataframe indexing.
 """
 from dash import ALL, Input, Output, State, ctx
 
-from ..figures import key_indicators
-
 
 def _empty():
     return {"country": None, "countries": None, "substance": None,
@@ -112,10 +110,3 @@ def register(app, data):
             active = [s for s in all_substances if s in active or s == clicked]
         # Falling back to all-active when nothing is left keeps "[] = all" tidy.
         return [] if set(active) == set(all_substances) or not active else active
-
-    @app.callback(
-        Output("substance-legend", "children"),
-        Input("substance-select-store", "data"),
-    )
-    def render_legend(active):
-        return key_indicators.legend_children(data, all_substances, active)

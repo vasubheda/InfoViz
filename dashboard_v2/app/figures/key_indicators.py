@@ -88,36 +88,54 @@ def substance_bars(data, all_substances, active, seiz, prices, comb, height=260)
     return fig_seiz, fig_price, fig_purity
 
 
-def legend_children(data, all_substances, active):
-    """Clickable HTML legend shared by the three bar charts.
+def substance_cards(data, all_substances, active, seiz):
+    """Clickable substance selection cards that act as the substance filter.
 
-    One swatch + label per substance; deselected ones render dimmed. Each item
-    carries a pattern-matching id so a single callback can toggle the store.
+    One card per substance: a colour dot, the name, and a headline metric (total
+    seizures in tonnes under the current year + map filters). Deselected cards
+    render dimmed but stay visible/clickable. Each carries the same
+    pattern-matching id the toggle callback already listens on, so the wiring is
+    unchanged from the old legend swatches.
     """
+    import dash_bootstrap_components as dbc
     from dash import html
 
     active_set = _active_set(all_substances, active)
-    items = []
+    seiz_by = (seiz.groupby("Substance")["Kilograms"].sum() / 1000
+               if seiz is not None and len(seiz) else None)
+
+    cards = []
     for s in all_substances:
         on = s in active_set
         color = data.substance_color_map.get(s, theme.TOL_MUTED[0])
-        items.append(html.Span(
-            [
+        if seiz_by is not None and s in seiz_by.index and seiz_by[s] == seiz_by[s]:
+            metric = f"{float(seiz_by[s]):,.1f} t"
+        else:
+            metric = "n/a"
+        # The clickable affordance lives on an outer Div (dbc.Card has no
+        # n_clicks); the Card inside is purely visual. The Div keeps the
+        # pattern-matching id the toggle callback already listens on.
+        cards.append(html.Div(dbc.Card(dbc.CardBody([
+            html.Div([
                 html.Span(style={
-                    "display": "inline-block", "width": "12px", "height": "12px",
-                    "borderRadius": "2px", "marginRight": "5px",
+                    "display": "inline-block", "width": "11px", "height": "11px",
+                    "borderRadius": "2px", "marginRight": "6px",
                     "backgroundColor": color,
                     "opacity": 1.0 if on else _DIM_OPACITY}),
-                html.Span(s),
-            ],
+                html.Span(s, className="fw-bold" if on else None,
+                          style={"fontSize": "0.8rem"}),
+            ], className="d-flex align-items-center"),
+            html.Div(metric, className="text-muted",
+                     style={"fontSize": "0.75rem", "marginLeft": "17px"}),
+        ], className="p-2"),
+            style={
+                "borderColor": color if on else "#dee2e6",
+                "borderWidth": "2px" if on else "1px",
+                "opacity": 1.0 if on else 0.6}),
             id={"type": "subst-legend", "index": s},
             n_clicks=0,
-            style={
-                "cursor": "pointer", "userSelect": "none",
-                "display": "inline-flex", "alignItems": "center",
-                "marginRight": "14px", "marginBottom": "4px",
-                "fontSize": "0.85rem",
-                "color": "inherit" if on else "#999",
-                "fontWeight": "bold" if on else "normal"},
+            style={"cursor": "pointer", "userSelect": "none",
+                   "marginRight": "8px", "marginBottom": "8px",
+                   "minWidth": "92px"},
         ))
-    return items
+    return cards

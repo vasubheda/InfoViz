@@ -35,6 +35,7 @@ def register(app, data):
         Output("ki-seizures-bar", "figure"),
         Output("ki-price-bar", "figure"),
         Output("ki-purity-bar", "figure"),
+        Output("substance-legend", "children"),
         Input("substance-select-store", "data"),
         Input("country-store", "data"),
         Input("year-slider", "value"),
@@ -123,11 +124,13 @@ def register(app, data):
         t_comb = apply_filters(data.combined, tbl_filters, selection)
         ki_seiz, ki_price, ki_purity = key_indicators.substance_bars(
             data, all_substances, active_store, t_seiz, t_prices, t_comb)
+        subst_cards = key_indicators.substance_cards(
+            data, all_substances, active_store, t_seiz)
 
         return (enf_map, ts, lag_fig, lag_note, reg_fig, reg_stats, ladder,
                 m_trend, qprice, prio_hm,
                 margin, arb, prio, border_arb, border_gaps, neigh_map,
-                kpi, ki_seiz, ki_price, ki_purity)
+                kpi, ki_seiz, ki_price, ki_purity, subst_cards)
 
 
 def _lag_limitations(data):

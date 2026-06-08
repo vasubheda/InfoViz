@@ -66,21 +66,14 @@ def build_layout(data):
                                     value=[data.year_min, data.year_max],
                                     marks={y: str(y) for y in years}, step=1,
                                     className="mb-3"),
-                    _loading(html.Div(id="kpi-panel")),
                     html.H6("Where & what: regions and countries", className="mb-1"),
                     *_graph("enforcement-map"),
-                    html.Small("Click a substance in the legend to filter every "
-                               "chart by substance (none selected = all "
-                               "substances). Deselected bars stay shown but dimmed.",
+                    html.Small("Click a substance card to filter every chart by "
+                               "substance (none selected = all substances). "
+                               "Deselected substances stay shown but dimmed.",
                                className="text-muted d-block mb-1 mt-3"),
                     html.Div(id="substance-legend",
                              className="d-flex flex-wrap mb-2"),
-                    dbc.Row([
-                        dbc.Col(_graph("ki-seizures-bar", displaymodebar=False),
-                                md=4),
-                        dbc.Col(_graph("ki-price-bar", displaymodebar=False), md=4),
-                        dbc.Col(_graph("ki-purity-bar", displaymodebar=False), md=4),
-                    ], className="g-2"),
                 ]),
             ]), md=4,
                 style={"position": "sticky", "top": "1rem",
@@ -92,7 +85,8 @@ def build_layout(data):
             # the brushing callbacks keep working. Visibility is toggled in
             # callbacks/tabs.py via each panel's `style`.
             dbc.Col([
-                dbc.Tabs(id="detail-tabs", active_tab="tab-q1", children=[
+                dbc.Tabs(id="detail-tabs", active_tab="tab-overview", children=[
+                    dbc.Tab(label="Overview", tab_id="tab-overview"),
                     dbc.Tab(label="Q1 · Do seizures move the market?",
                             tab_id="tab-q1"),
                     dbc.Tab(label="Q2 · Profitability & markup", tab_id="tab-q2"),
@@ -100,7 +94,27 @@ def build_layout(data):
                     dbc.Tab(label="Q4/Q5 · Enforcement priority", tab_id="tab-q45"),
                 ], className="mb-3"),
 
-                # --- Panel Q1: seizures -> market, with time-series context ---
+                # --- Panel Overview: KPI chips, substance bars, time series ---
+                html.Div(id="panel-overview", children=[
+                    _loading(html.Div(id="kpi-panel")),
+                    dbc.Row([
+                        dbc.Col(_graph("ki-seizures-bar", displaymodebar=False),
+                                md=4),
+                        dbc.Col(_graph("ki-price-bar", displaymodebar=False),
+                                md=4),
+                        dbc.Col(_graph("ki-purity-bar", displaymodebar=False),
+                                md=4),
+                    ], className="g-2 mb-4"),
+                    dbc.Row([
+                        _card("Trends over time",
+                              _graph("timeseries-chart",
+                                     "Seizures, price & purity over time — click "
+                                     "a point to filter by year"),
+                              md=12),
+                    ], className="mb-4"),
+                ]),
+
+                # --- Panel Q1: seizures -> market ---
                 html.Div(id="panel-q1", children=[
                     dbc.Row([
                         _card("Q1 · Do seizures move the market? "
@@ -131,13 +145,6 @@ def build_layout(data):
                                _loading(dcc.Graph(id="regression-chart")),
                                html.Div(id="regression-stats",
                                         className="mt-2 small text-muted")]),
-                    ], className="mb-4"),
-                    dbc.Row([
-                        _card("Trends over time",
-                              _graph("timeseries-chart",
-                                     "Seizures, price & purity over time — click "
-                                     "a point to filter by year"),
-                              md=12),
                     ], className="mb-4"),
                 ]),
 
