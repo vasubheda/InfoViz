@@ -33,24 +33,23 @@ def build_layout(data):
     years = list(range(data.year_min, data.year_max + 1))
 
     return dbc.Container([
-        # Header
-        dbc.Row(dbc.Col([
-            html.H1("European Drug-Market Intelligence",
-                    className="text-center text-primary mb-2"),
-            html.H5("An evidence base for enforcement prioritisation using "
-                    "prices, purity & seizures, 2019–2023 (UNODC)",
-                    className="text-center text-muted mb-3"),
-            html.Hr(),
-        ])),
-
         # Master–detail body: a sticky selection hub on the left, the
         # research-question-tabbed analytical charts on the right.
         dbc.Row([
             # ---- MASTER (left, sticky): the selection hub ----
             dbc.Col(dbc.Card([
                 dbc.CardHeader(dbc.Row([
-                    dbc.Col(html.H5("Key indicators", className="mb-0"),
-                            width="auto", className="d-flex align-items-center"),
+                    dbc.Col([
+                        html.H5("European Drug-Market Intelligence",
+                                className="mb-0 d-inline-block me-2"),
+                        html.Span("ⓘ", id="title-info",
+                                  className="text-muted",
+                                  style={"cursor": "help"}),
+                        dbc.Tooltip(
+                            "An evidence base for enforcement prioritisation "
+                            "using prices, purity & seizures, 2019–2023 (UNODC)",
+                            target="title-info"),
+                    ], width="auto", className="d-flex align-items-center"),
                     dbc.Col(dbc.Button("Reset selection", id="reset-button",
                                        color="danger", size="sm"),
                             width="auto", className="d-flex align-items-center"),
