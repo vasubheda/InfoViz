@@ -2,7 +2,7 @@
 (research questions from the proposal drive each panel).
 """
 import dash_bootstrap_components as dbc
-from dash import dash_table, dcc, html
+from dash import dcc, html
 
 from .components.stores import make_stores
 from .figures.helpers import imputed_legend_note
@@ -82,35 +82,18 @@ def build_layout(data):
                 _loading(html.Div(id="kpi-panel")),
                 html.H6("Where & what: regions and countries", className="mb-1"),
                 *_graph("enforcement-map"),
-                html.Small("Select rows to filter every chart by substance "
-                           "(none selected = all substances).",
+                html.Small("Click a substance in the legend to filter every "
+                           "chart by substance (none selected = all "
+                           "substances). Deselected bars stay shown but dimmed.",
                            className="text-muted d-block mb-1 mt-3"),
-                dash_table.DataTable(
-                    id="substance-table",
-                    columns=[
-                        {"name": "Substance", "id": "Substance"},
-                        {"name": "Seizures (t)", "id": "Seizures"},
-                        {"name": "Avg price (USD/g)", "id": "Price"},
-                        {"name": "Avg purity", "id": "Purity"},
-                    ],
-                    data=[{"Substance": s} for s in substances],
-                    row_selectable="multi",
-                    selected_rows=[],
-                    cell_selectable=False,
-                    style_as_list_view=True,
-                    style_cell={"fontSize": "0.85rem", "padding": "4px 8px",
-                                "fontFamily": "inherit"},
-                    style_header={"fontWeight": "bold"},
-                    style_data_conditional=[
-                        {"if": {"state": "selected"},
-                         "backgroundColor": "rgba(13,110,253,0.12)",
-                         "border": "1px solid rgba(13,110,253,0.4)"},
-                    ],
-                    style_cell_conditional=[
-                        {"if": {"column_id": c}, "textAlign": "right"}
-                        for c in ("Seizures", "Price", "Purity")
-                    ],
-                ),
+                html.Div(id="substance-legend",
+                         className="d-flex flex-wrap mb-2"),
+                dbc.Row([
+                    dbc.Col(_graph("ki-seizures-bar", displaymodebar=False),
+                            md=4),
+                    dbc.Col(_graph("ki-price-bar", displaymodebar=False), md=4),
+                    dbc.Col(_graph("ki-purity-bar", displaymodebar=False), md=4),
+                ], className="g-2"),
             ]),
         ])), className="mb-4"),
 

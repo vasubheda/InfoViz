@@ -6,9 +6,9 @@ frozen-panel bug).
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, html
 
-from ..figures import (border_arbitrage, helpers, lag_corr, maps, margin_trend,
-                       multivariate, price_ladder, priority, priority_heatmap,
-                       quality_price, timeseries)
+from ..figures import (border_arbitrage, helpers, key_indicators, lag_corr,
+                       maps, margin_trend, multivariate, price_ladder, priority,
+                       priority_heatmap, quality_price, timeseries)
 from ..figures.filtering import Filters, apply_filters
 from .. import theme
 
@@ -32,8 +32,10 @@ def register(app, data):
         Output("border-arbitrage-gaps", "children"),
         Output("neighbour-map", "figure"),
         Output("kpi-panel", "children"),
-        Output("substance-table", "data"),
-        Input("substance-table", "selected_rows"),
+        Output("ki-seizures-bar", "figure"),
+        Output("ki-price-bar", "figure"),
+        Output("ki-purity-bar", "figure"),
+        Input("substance-select-store", "data"),
         Input("country-store", "data"),
         Input("year-slider", "value"),
         Input("x-axis", "value"),
@@ -42,20 +44,16 @@ def register(app, data):
         Input("arb-substance", "value"),
         Input("arb-level", "value"),
         Input("selection-store", "data"),
-        State("substance-table", "data"),
     )
-    def update(selected_rows, countries, year_range, x_axis, y_axis,
-               arb_country, arb_substance, arb_level, selection,
-               table_rows):
+    def update(active_store, countries, year_range, x_axis, y_axis,
+               arb_country, arb_substance, arb_level, selection):
         selection = dict(selection or {})
 
-        # Substances come from the selected rows of the Key-indicators table.
-        # No rows selected -> treat as "all substances".
-        all_substances = [r["Substance"] for r in (table_rows or [])]
-        selected_rows = selected_rows or []
-        picked = [all_substances[i] for i in selected_rows
-                  if 0 <= i < len(all_substances)]
-        substances = picked or all_substances
+        # Active substances come from the Key-indicators legend store.
+        # Empty list -> treat as "all substances".
+        all_substances = data.substances
+        active_store = active_store or []
+        substances = active_store or all_substances
 
         # The country selection (driven by the map) folds into the selection
         # dict the figure builders already understand: exactly one -> a
@@ -117,18 +115,19 @@ def register(app, data):
 
         kpi = _kpi(f_seiz, f_prices)
 
-        # The table always lists every substance (so any can be picked); its
+        # The bars always cover every substance (so any can be toggled); their
         # values reflect the year + map selection but NOT the substance pick.
         tbl_filters = Filters(substances=all_substances, year_range=list(year_range))
         t_seiz = apply_filters(data.seizures, tbl_filters, selection)
         t_prices = apply_filters(data.prices, tbl_filters, selection)
         t_comb = apply_filters(data.combined, tbl_filters, selection)
-        table_data = _substance_rows(all_substances, t_seiz, t_prices, t_comb)
+        ki_seiz, ki_price, ki_purity = key_indicators.substance_bars(
+            data, all_substances, active_store, t_seiz, t_prices, t_comb)
 
         return (enf_map, ts, lag_fig, lag_note, reg_fig, reg_stats, ladder,
                 m_trend, qprice, prio_hm,
                 margin, arb, prio, border_arb, border_gaps, neigh_map,
-                kpi, table_data)
+                kpi, ki_seiz, ki_price, ki_purity)
 
 
 def _lag_limitations(data):
@@ -153,31 +152,3 @@ def _kpi(seiz, prices):
         ]), className="text-center",
             style={"borderLeft": f"4px solid {color}"}), md=6)
         for label, val, color in scalar_cards], className="mb-3")
-
-
-def _substance_rows(all_substances, seiz, prices, comb):
-    """Per-substance seizures / avg price / avg purity as DataTable row dicts.
-
-    Always returns one row per substance in ``all_substances`` (fixed order, so
-    the table's selected-row indices stay meaningful), with "—" where a metric
-    has no data under the current year + map selection.
-    """
-    seiz_by = (seiz.groupby("Substance")["Kilograms"].sum() / 1000
-               if len(seiz) else None)
-    price_by = (prices.groupby("Substance")["Typical_USD"].mean()
-                if len(prices) else None)
-    purity_by = (comb.groupby("Substance")["Typical"].mean()
-                 if len(comb) else None)
-
-    def fmt(series, s, pattern):
-        if series is None or s not in series.index:
-            return "—"
-        v = series[s]
-        return pattern.format(v) if v == v else "—"
-
-    return [{
-        "Substance": s,
-        "Seizures": fmt(seiz_by, s, "{:,.1f}"),
-        "Price": fmt(price_by, s, "${:,.2f}"),
-        "Purity": fmt(purity_by, s, "{:.1f}%"),
-    } for s in all_substances]

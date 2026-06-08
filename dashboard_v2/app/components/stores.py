@@ -13,4 +13,7 @@ def make_stores():
         # Canonical country selection, driven entirely by the enforcement map
         # (replaces the old country dropdown). Empty list = all of Europe.
         dcc.Store(id="country-store", data=[]),
+        # Active substances, toggled via the Key-indicators legend (replaces the
+        # old substance-table row selection). Empty list = all substances active.
+        dcc.Store(id="substance-select-store", data=[]),
     ]

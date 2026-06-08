@@ -1,0 +1,123 @@
+"""Key-indicators substance bars: three compact bar charts (seizures, avg price,
+avg purity) that replace the old per-substance DataTable.
+
+Selection moved from table rows to a shared clickable legend (rendered as HTML
+swatches, see callbacks/selection.py): bars for deselected substances stay
+visible but dimmed, so every substance's value is still comparable while only
+the active ones drive the rest of the dashboard.
+"""
+import plotly.graph_objects as go
+
+from .. import theme
+from . import helpers
+
+# Opacity for a bar whose substance is currently deselected (dimmed-but-visible).
+_DIM_OPACITY = 0.22
+
+
+def _active_set(all_substances, active):
+    """Empty / None active list means 'all substances active' (the default)."""
+    return set(active) if active else set(all_substances)
+
+
+def _bar(all_substances, active_set, values, colors, title, hover_unit,
+         fmt, tickprefix="", height=260):
+    """One vertical bar chart over the fixed substance order, dimming inactive.
+
+    ``values`` carry ``None`` for substances with no data under the current
+    filters (distinct from a genuine 0): Plotly draws no bar there and we label
+    it "n/a", so a real zero (a drawn zero-height bar) stays distinguishable.
+    """
+    opacities = [1.0 if s in active_set else _DIM_OPACITY for s in all_substances]
+    text = ["n/a" if v is None else fmt(v) for v in values]
+    present = [v for v in values if v is not None]
+    fig = go.Figure(go.Bar(
+        x=all_substances, y=values,
+        marker_color=colors, marker_opacity=opacities,
+        text=text, textposition="outside",
+        textfont=dict(size=10), cliponaxis=False,
+        hovertemplate=f"%{{x}}<br>{hover_unit}<extra></extra>"))
+    fig.update_layout(
+        title=dict(text=title, font=dict(size=13)),
+        height=height, plot_bgcolor=theme.PLOT_BG, showlegend=False,
+        margin=dict(l=45, r=12, t=40, b=70),
+        xaxis=dict(showticklabels=False, gridcolor=theme.GRID),
+        # Headroom so the outside value labels are not clipped at the top.
+        yaxis=dict(gridcolor=theme.GRID, tickprefix=tickprefix,
+                   rangemode="tozero",
+                   range=[0, (max(present) * 1.18) if present and max(present) > 0
+                          else 1]))
+    return fig
+
+
+def substance_bars(data, all_substances, active, seiz, prices, comb, height=260):
+    """Return (seizures, avg-price, avg-purity) bar figures over all substances.
+
+    Values aggregate the year + map selection (NOT the substance pick), matching
+    the old table, so a dimmed substance still shows its real metric. ``active``
+    is the selected-substance list ([]/None -> all active).
+    """
+    active_set = _active_set(all_substances, active)
+    colors = [data.substance_color_map.get(s, theme.TOL_MUTED[0])
+              for s in all_substances]
+
+    seiz_by = (seiz.groupby("Substance")["Kilograms"].sum() / 1000
+               if len(seiz) else None)
+    price_by = (prices.groupby("Substance")["Typical_USD"].mean()
+                if len(prices) else None)
+    purity_by = (comb.groupby("Substance")["Typical"].mean()
+                 if len(comb) else None)
+
+    def col(series):
+        """One value per substance; ``None`` where the metric has no data (so a
+        missing substance is drawn as a gap, not as a misleading zero)."""
+        if series is None:
+            return [None] * len(all_substances)
+        return [float(series[s]) if s in series.index and series[s] == series[s]
+                else None for s in all_substances]
+
+    fig_seiz = _bar(all_substances, active_set, col(seiz_by), colors,
+                    "Seizures (t)", "Seizures: %{y:,.1f} t",
+                    fmt=lambda v: f"{v:,.1f}", height=height)
+    fig_price = _bar(all_substances, active_set, col(price_by), colors,
+                     "Avg price (USD/g)", "Avg price: $%{y:,.2f}/g",
+                     fmt=lambda v: f"${v:,.0f}", tickprefix="$", height=height)
+    fig_purity = _bar(all_substances, active_set, col(purity_by), colors,
+                      "Avg purity (%)", "Avg purity: %{y:.1f}%",
+                      fmt=lambda v: f"{v:.0f}%", height=height)
+    return fig_seiz, fig_price, fig_purity
+
+
+def legend_children(data, all_substances, active):
+    """Clickable HTML legend shared by the three bar charts.
+
+    One swatch + label per substance; deselected ones render dimmed. Each item
+    carries a pattern-matching id so a single callback can toggle the store.
+    """
+    from dash import html
+
+    active_set = _active_set(all_substances, active)
+    items = []
+    for s in all_substances:
+        on = s in active_set
+        color = data.substance_color_map.get(s, theme.TOL_MUTED[0])
+        items.append(html.Span(
+            [
+                html.Span(style={
+                    "display": "inline-block", "width": "12px", "height": "12px",
+                    "borderRadius": "2px", "marginRight": "5px",
+                    "backgroundColor": color,
+                    "opacity": 1.0 if on else _DIM_OPACITY}),
+                html.Span(s),
+            ],
+            id={"type": "subst-legend", "index": s},
+            n_clicks=0,
+            style={
+                "cursor": "pointer", "userSelect": "none",
+                "display": "inline-flex", "alignItems": "center",
+                "marginRight": "14px", "marginBottom": "4px",
+                "fontSize": "0.85rem",
+                "color": "inherit" if on else "#999",
+                "fontWeight": "bold" if on else "normal"},
+        ))
+    return items

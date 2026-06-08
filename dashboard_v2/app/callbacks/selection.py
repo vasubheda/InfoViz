@@ -4,7 +4,9 @@ the canonical selection-store. ctx.triggered_id decides which dimension to set.
 This replaces the old 18-input monolith's if/elif reconstruction and the
 fragile ' Europe' string surgery / positional geodataframe indexing.
 """
-from dash import Input, Output, State, ctx
+from dash import ALL, Input, Output, State, ctx
+
+from ..figures import key_indicators
 
 
 def _empty():
@@ -77,12 +79,43 @@ def register(app, data):
         return sel, "Click any chart to filter the rest."
 
     # Reset also clears the map-driven country selection and the substance
-    # table's row selection, so one button returns the whole app to "all".
+    # legend selection, so one button returns the whole app to "all".
     @app.callback(
         Output("country-store", "data", allow_duplicate=True),
-        Output("substance-table", "selected_rows"),
+        Output("substance-select-store", "data", allow_duplicate=True),
         Input("reset-button", "n_clicks"),
         prevent_initial_call=True,
     )
     def reset_external_selections(_n):
         return [], []
+
+    # Clicking a substance in the shared Key-indicators legend toggles it in the
+    # active set. The store uses [] = "all active", so the first click on a
+    # full-active legend deselects one by materialising all-minus-that.
+    all_substances = data.substances
+
+    @app.callback(
+        Output("substance-select-store", "data"),
+        Input({"type": "subst-legend", "index": ALL}, "n_clicks"),
+        State("substance-select-store", "data"),
+        prevent_initial_call=True,
+    )
+    def toggle_substance(_clicks, current):
+        clicked = ctx.triggered_id and ctx.triggered_id.get("index")
+        if not clicked:
+            return current or []
+        active = list(current) if current else list(all_substances)
+        if clicked in active:
+            active = [s for s in active if s != clicked]
+        else:
+            # keep canonical (data.substances) order
+            active = [s for s in all_substances if s in active or s == clicked]
+        # Falling back to all-active when nothing is left keeps "[] = all" tidy.
+        return [] if set(active) == set(all_substances) or not active else active
+
+    @app.callback(
+        Output("substance-legend", "children"),
+        Input("substance-select-store", "data"),
+    )
+    def render_legend(active):
+        return key_indicators.legend_children(data, all_substances, active)
