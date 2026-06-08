@@ -28,15 +28,21 @@ IMPUTED_MARKER = dict(symbol="circle-open", line=dict(width=2, dash="dot"))
 
 
 def substance_color_map(substances) -> dict:
-    """Deterministic substance -> hex assignment, cycling the Tol palette."""
-    return {s: TOL_MUTED[i % len(TOL_MUTED)] for i, s in enumerate(sorted(substances))}
+    """Deterministic substance -> hex assignment, cycling the Tol palette.
+
+    'Other' is excluded from the assignment: it is never displayed, and giving
+    it a slot would push the displayed substances onto 7 head colours, leaving
+    too few free for the disjoint subregion band (see subregion_color_map)."""
+    displayed = sorted(s for s in substances if s != "Other")
+    return {s: TOL_MUTED[i % len(TOL_MUTED)] for i, s in enumerate(displayed)}
 
 
 def subregion_color_map(subregions) -> dict:
     """Deterministic subregion -> hex, drawn from the TAIL of the Tol palette so
     subregion colours never collide with substance colours (which use the head;
-    see substance_color_map). With our data substances claim the first 7 slots
-    (incl. the never-displayed 'Other'), leaving exactly the last three
-    (#DDDDDD/#AA4499/#882255) free — so the tail is the only disjoint band."""
-    tail = list(reversed(TOL_MUTED))
+    see substance_color_map). The 6 displayed substances claim slots 0-5,
+    leaving #CC6677/#882255/#AA4499/#DDDDDD free. #DDDDDD (pale grey) is dropped
+    — as a region fill it reads like 'no data' — so subregions take the rose /
+    maroon / purple, all distinct from every substance."""
+    tail = [c for c in reversed(TOL_MUTED) if c != "#DDDDDD"]
     return {sr: tail[i % len(tail)] for i, sr in enumerate(sorted(subregions))}

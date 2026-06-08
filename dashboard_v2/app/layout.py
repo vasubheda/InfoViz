@@ -272,7 +272,8 @@ def build_layout(data):
         # permanently behind it).
         html.Div(
             html.P("Data: UNODC World Drug Report 2019–2023 · "
-                   "Built with Dash/Plotly · Colourblind-safe palettes throughout",
+                   "Built with Dash/Plotly · Palettes: Paul Tol Muted "
+                   "(categorical), Viridis (sequential), RdBu (diverging)",
                    className="text-center text-muted small mb-0"),
             style={"position": "fixed", "bottom": 0, "left": 0, "right": 0,
                    "zIndex": 1030, "backgroundColor": "#f8f9fa",
