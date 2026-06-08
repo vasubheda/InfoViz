@@ -79,3 +79,13 @@ def register(app, data):
             return selected
 
         return no_update
+
+    # Show how many countries are currently selected next to the section
+    # heading (no selection = the whole map / all countries).
+    @app.callback(
+        Output("country-count", "children"),
+        Input("country-store", "data"),
+    )
+    def country_count(selected):
+        n = len(selected or [])
+        return "All selected" if n == 0 else f"{n} selected"

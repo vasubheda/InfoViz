@@ -66,7 +66,13 @@ def build_layout(data):
                                     value=[data.year_min, data.year_max],
                                     marks={y: str(y) for y in years}, step=1,
                                     className="mb-3"),
-                    html.H6("Regions & countries", className="master-heading mt-3"),
+                    html.Div([
+                        html.H6("Regions & countries",
+                                className="master-heading mb-0"),
+                        html.Span(id="country-count",
+                                  className="text-muted small"),
+                    ], className="d-flex justify-content-between "
+                                 "align-items-baseline mt-3 mb-1"),
                     *_graph("enforcement-map"),
                     html.H6("Substances", className="master-heading mt-3"),
                     html.Div(id="substance-legend",
