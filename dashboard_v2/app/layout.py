@@ -85,14 +85,24 @@ def build_layout(data):
             # the brushing callbacks keep working. Visibility is toggled in
             # callbacks/tabs.py via each panel's `style`.
             dbc.Col([
-                dbc.Tabs(id="detail-tabs", active_tab="tab-overview", children=[
-                    dbc.Tab(label="Overview", tab_id="tab-overview"),
-                    dbc.Tab(label="Q1 · Do seizures move the market?",
-                            tab_id="tab-q1"),
-                    dbc.Tab(label="Q2 · Profitability & markup", tab_id="tab-q2"),
-                    dbc.Tab(label="Q3 · Cross-border spillover", tab_id="tab-q3"),
-                    dbc.Tab(label="Q4/Q5 · Enforcement priority", tab_id="tab-q45"),
-                ], className="mb-3"),
+                html.Div(
+                    dbc.Tabs(id="detail-tabs", active_tab="tab-overview", children=[
+                        dbc.Tab(label="Overview", tab_id="tab-overview"),
+                        dbc.Tab(label="Q1 · Do seizures move the market?",
+                                tab_id="tab-q1"),
+                        dbc.Tab(label="Q2 · Profitability & markup", tab_id="tab-q2"),
+                        dbc.Tab(label="Q3 · Cross-border spillover", tab_id="tab-q3"),
+                        dbc.Tab(label="Q4/Q5 · Enforcement priority", tab_id="tab-q45"),
+                    ]),
+                    className="mb-3",
+                    # Keep the tab bar in view while the panel content scrolls.
+                    # Stick flush to the viewport top (top:0) with an opaque
+                    # background and top padding, so no panel content can scroll
+                    # into view above the tabs. The 1rem padding visually keeps
+                    # the tabs aligned with the sticky master panel's top.
+                    style={"position": "sticky", "top": 0, "zIndex": 1020,
+                           "backgroundColor": "#f8f9fa",
+                           "paddingTop": "1rem"}),
 
                 # --- Panel Overview: KPI chips, substance bars, time series ---
                 html.Div(id="panel-overview", children=[
@@ -256,10 +266,16 @@ def build_layout(data):
 
         *make_stores(),
 
-        dbc.Row(dbc.Col([
-            html.Hr(),
+        # Fixed attribution bar, always visible; detail/master content scrolls
+        # beneath it (the container's bottom padding keeps content from hiding
+        # permanently behind it).
+        html.Div(
             html.P("Data: UNODC World Drug Report 2019–2023 · "
                    "Built with Dash/Plotly · Colourblind-safe palettes throughout",
-                   className="text-center text-muted small"),
-        ])),
-    ], fluid=True, style={"backgroundColor": "#f8f9fa"})
+                   className="text-center text-muted small mb-0"),
+            style={"position": "fixed", "bottom": 0, "left": 0, "right": 0,
+                   "zIndex": 1030, "backgroundColor": "#f8f9fa",
+                   "borderTop": "1px solid #dee2e6",
+                   "padding": "0.4rem 1rem"}),
+    ], fluid=True, style={"backgroundColor": "#f8f9fa",
+                          "paddingBottom": "2.5rem"})
