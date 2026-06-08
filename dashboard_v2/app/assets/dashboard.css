@@ -2,16 +2,6 @@
    Palette hexes mirror app/theme.py (CSS can't import it): ACCENT_ALT #0072B2,
    borders #dee2e6. */
 
-/* Per-tab lead-in: a one-line framing of the question + audience. */
-.detail-lead {
-    color: #6c757d;
-    font-size: 0.95rem;
-    line-height: 1.4;
-    margin-bottom: 1rem;
-    padding: 0.4rem 0 0.4rem 0.75rem;
-    border-left: 3px solid #0072B2;
-}
-
 /* Detail cards: distinct surfaces against the #f8f9fa page, with a light
    hover lift instead of a hard border. */
 .detail-card {

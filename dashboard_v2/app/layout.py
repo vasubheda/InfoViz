@@ -21,11 +21,6 @@ def _graph(graph_id, hint=None, displaymodebar=True):
     return children
 
 
-def _lead(text):
-    """One-line framing of a tab's research question + intended audience."""
-    return html.P(text, className="detail-lead")
-
-
 def _card(title, body, md=6, className="detail-card"):
     return dbc.Col(dbc.Card([
         dbc.CardHeader(html.H5(title, className="mb-0")),
@@ -91,11 +86,10 @@ def build_layout(data):
                     dbc.Tabs(id="detail-tabs", active_tab="tab-overview",
                              className="detail-tabs", children=[
                         dbc.Tab(label="Overview", tab_id="tab-overview"),
-                        dbc.Tab(label="Q1 · Do seizures move the market?",
-                                tab_id="tab-q1"),
-                        dbc.Tab(label="Q2 · Profitability & markup", tab_id="tab-q2"),
-                        dbc.Tab(label="Q3 · Cross-border spillover", tab_id="tab-q3"),
-                        dbc.Tab(label="Q4/Q5 · Enforcement priority", tab_id="tab-q45"),
+                        dbc.Tab(label="Seizure Impact", tab_id="tab-q1"),
+                        dbc.Tab(label="Profitability", tab_id="tab-q2"),
+                        dbc.Tab(label="Cross-Border", tab_id="tab-q3"),
+                        dbc.Tab(label="Enforcement Priority", tab_id="tab-q45"),
                     ]),
                     className="mb-3",
                     # Keep the tab bar in view while the panel content scrolls.
@@ -109,9 +103,6 @@ def build_layout(data):
 
                 # --- Panel Overview: KPI chips, substance bars, time series ---
                 html.Div(id="panel-overview", children=[
-                    _lead("Market at a glance: totals, the substance mix, and "
-                          "how prices, purity & seizures move together over "
-                          "2019–2023."),
                     _loading(html.Div(id="kpi-panel")),
                     dbc.Row([
                         dbc.Col(_graph("ki-seizures-bar", displaymodebar=False),
@@ -132,8 +123,6 @@ def build_layout(data):
 
                 # --- Panel Q1: seizures -> market ---
                 html.Div(id="panel-q1", children=[
-                    _lead("Analyst view — does a seizure spike move street "
-                          "prices a year later?"),
                     dbc.Row([
                         _card("Q1 · Do seizures move the market? "
                               "(within-country, +1yr lag)",
@@ -168,8 +157,6 @@ def build_layout(data):
 
                 # --- Panel Q2: profitability & markup ---
                 html.Div(id="panel-q2", children=[
-                    _lead("Pricing & markup view — where the wholesale→retail "
-                          "margin sits and how it shifts over time."),
                     dbc.Row([
                         _card("Q2 · Retail vs wholesale price ladder by region "
                               "& substance",
@@ -203,8 +190,6 @@ def build_layout(data):
 
                 # --- Panel Q3: cross-border spillover ---
                 html.Div(id="panel-q3", children=[
-                    _lead("Border-control view — where cross-border price gaps "
-                          "create smuggling incentives."),
                     dbc.Row([
                         _card("Q3 · Cross-border price-arbitrage exposure",
                               [dbc.Row([
@@ -255,8 +240,6 @@ def build_layout(data):
 
                 # --- Panel Q4/Q5: enforcement priority ---
                 html.Div(id="panel-q45", children=[
-                    _lead("Prioritisation view — which country × substance "
-                          "markets warrant the most enforcement attention."),
                     dbc.Row([
                         _card("Q4 · Market profitability / enforcement-priority "
                               "index",
