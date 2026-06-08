@@ -146,16 +146,14 @@ def _lag_limitations(data):
 
 
 def _kpi(seiz, prices):
+    # A single compact total-seizures indicator, shown in the master panel.
+    # (The old two-card KPI row — total seizures + countries — was dropped from
+    # the Overview tab; the country count is already surfaced beside the map.)
     total_t = seiz["Kilograms"].sum() / 1000 if len(seiz) else 0
-    n_countries = prices["Country"].nunique() if len(prices) else 0
-    scalar_cards = [
-        ("Total seizures (t)", f"{total_t:,.1f}", theme.ACCENT_ALT),
-        ("Countries", f"{n_countries}", "#CC79A7"),
-    ]
-    return dbc.Row([
-        dbc.Col(dbc.Card(dbc.CardBody([
-            html.H3(val, style={"color": color}),
-            html.P(label, className="text-muted mb-0"),
-        ]), className="text-center",
-            style={"borderLeft": f"4px solid {color}"}), md=6)
-        for label, val, color in scalar_cards], className="mb-3")
+    color = theme.ACCENT_ALT
+    return dbc.Card(dbc.CardBody([
+        html.H4(f"{total_t:,.1f}", className="mb-0", style={"color": color}),
+        html.P("Total seizures (t), current selection",
+               className="text-muted small mb-0"),
+    ]), className="text-center",
+        style={"borderLeft": f"4px solid {color}"})

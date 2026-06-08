@@ -40,8 +40,11 @@ def _bar(all_substances, active_set, values, colors, title, hover_unit,
     fig.update_layout(
         title=dict(text=title, font=dict(size=13)),
         height=height, plot_bgcolor=theme.PLOT_BG, showlegend=False,
-        margin=dict(l=45, r=12, t=40, b=70),
-        xaxis=dict(showticklabels=False, gridcolor=theme.GRID),
+        margin=dict(l=45, r=12, t=40, b=95),
+        # Substance names along the x-axis (angled so the long ones — e.g.
+        # "Tranquillizers and Sedatives" — fit the narrow md=4 columns).
+        xaxis=dict(showticklabels=True, tickangle=-40,
+                   tickfont=dict(size=9), gridcolor=theme.GRID),
         # Headroom so the outside value labels are not clipped at the top.
         yaxis=dict(gridcolor=theme.GRID, tickprefix=tickprefix,
                    rangemode="tozero",

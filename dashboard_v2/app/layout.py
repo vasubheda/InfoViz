@@ -77,6 +77,8 @@ def build_layout(data):
                     html.H6("Substances", className="master-heading mt-3"),
                     html.Div(id="substance-legend",
                              className="d-flex flex-wrap mb-2"),
+                    # Total-seizures indicator (relocated from the Overview tab).
+                    _loading(html.Div(id="kpi-panel", className="mt-3")),
                 ]),
             ]), md=4,
                 style={"position": "sticky", "top": "1rem",
@@ -109,7 +111,6 @@ def build_layout(data):
 
                 # --- Panel Overview: KPI chips, substance bars, time series ---
                 html.Div(id="panel-overview", children=[
-                    _loading(html.Div(id="kpi-panel")),
                     dbc.Row([
                         dbc.Col(_graph("ki-seizures-bar", displaymodebar=False),
                                 md=4),
