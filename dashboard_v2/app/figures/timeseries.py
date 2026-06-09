@@ -8,11 +8,94 @@ from . import helpers
 
 # (column, transform, y-axis label, imputed-flag column, aggregation)
 METRICS = [
-    ("Kilograms", lambda x: x / 1000, "Seizures (Tons)", "seizure_imputed", "sum"),
+    ("Kilograms", lambda x: x / 1000, "Seizures (t)", "seizure_imputed", "sum"),
     ("Typical_USD", lambda x: x, "Average Price (USD/g)", "price_imputed", "mean"),
     ("Typical", lambda x: x, "Average Purity (%)", "purity_imputed", "mean"),
 ]
 
+
+def timeseries_single(data, filtered_combined, selection, metric_index, height=260):
+    """Animated line chart for one metric — lines draw left-to-right year by year.
+
+    Each Plotly frame reveals one additional year so the built-in Play button
+    progressively draws the lines. The final frame (all years visible) is also
+    the initial data, so the chart renders fully on load and replays on demand.
+    """
+    if len(filtered_combined) == 0:
+        return helpers.empty_fig("No data for selected filters", height)
+
+    col, transform, y_label, imp_col, agg = METRICS[metric_index]
+
+    cmap = {s: data.substance_color_map[s]
+            for s in filtered_combined["Substance"].unique()
+            if s in data.substance_color_map}
+
+    present = filtered_combined.dropna(subset=[col])
+    grouped = (present.groupby(["Year", "Substance"])
+               .agg(val=(col, agg), imp=(imp_col, "max")).reset_index())
+    grouped["Value"] = transform(grouped["val"])
+    grouped["Year"] = grouped["Year"].astype(int)
+
+    years = sorted(grouped["Year"].unique())
+    substances = list(grouped["Substance"].unique())
+
+    def traces_for_years(up_to_years):
+        """One Scatter trace per substance showing data up to the given year set."""
+        traces = []
+        for substance in substances:
+            color = cmap.get(substance, theme.TOL_MUTED[0])
+            g = grouped[(grouped["Substance"] == substance)
+                        & (grouped["Year"].isin(up_to_years))].sort_values("Year")
+            traces.append(go.Scatter(
+                x=g["Year"], y=g["Value"], mode="lines+markers", name=substance,
+                legendgroup=substance,
+                line=dict(width=2, color=color),
+                marker=dict(size=7, line=dict(width=2, color="white"), color=color),
+                hovertemplate=f"{y_label}: %{{y:.2f}}<extra>{substance}</extra>"))
+        return traces
+
+    # Initial state: all years visible (so the chart looks complete on load)
+    initial_traces = traces_for_years(years)
+
+    # One frame per year — each reveals one more year cumulatively
+    frames = [
+        go.Frame(data=traces_for_years(years[:i + 1]), name=str(y))
+        for i, y in enumerate(years)
+    ]
+
+    fig = go.Figure(data=initial_traces, frames=frames)
+
+    if selection.get("year"):
+        fig.add_vline(x=selection["year"], line_dash="dash",
+                      line_color=theme.ACCENT, line_width=2)
+
+    x_min, x_max = min(years), max(years)
+    fig.update_layout(
+        height=height, plot_bgcolor=theme.PLOT_BG,
+        title=dict(text=y_label, font=dict(size=13)),
+        margin=dict(l=45, r=12, t=40, b=40),
+        xaxis=dict(title="Year", type="linear", tickmode="linear", dtick=1,
+                   tickformat="d", gridcolor=theme.GRID,
+                   range=[x_min - 0.5, x_max + 0.5]),
+        yaxis=dict(gridcolor=theme.GRID, rangemode="tozero"),
+        showlegend=False,
+        hovermode="x unified",
+        updatemenus=[dict(
+            type="buttons", showactive=False,
+            x=1.0, xanchor="right", y=1.25, yanchor="top",
+            buttons=[dict(
+                label="▶ ⏸",
+                method="animate",
+                args=[None, dict(frame=dict(duration=600, redraw=True),
+                                 fromcurrent=True,
+                                 transition=dict(duration=400, easing="sin-out"))],
+                args2=[[None], dict(frame=dict(duration=0, redraw=False),
+                                    mode="immediate",
+                                    transition=dict(duration=0))],
+            )],
+        )],
+    )
+    return fig
 
 def timeseries(data, filtered_combined, selection, year_range, height=560):
     """Three stacked line charts — one per metric — sharing a single legend."""

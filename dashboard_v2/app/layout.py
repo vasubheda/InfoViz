@@ -116,7 +116,7 @@ def build_layout(data):
                           "backgroundColor": "#f8f9fa",
                           "paddingTop": "1rem"}),
 
-                # --- Panel Overview: KPI chips, substance bars, time series ---
+                # --- Panel Overview: substance bars + per-metric time series ---
                 html.Div(id="panel-overview", children=[
                     dbc.Row([
                         dbc.Col(_graph("ki-seizures-bar", displaymodebar=False),
@@ -125,12 +125,12 @@ def build_layout(data):
                                 md=4),
                         dbc.Col(_graph("ki-purity-bar", displaymodebar=False),
                                 md=4),
-                    ], className="g-2 mb-4"),
+                    ], className="g-2 mb-2"),
                     dbc.Row([
-                        _card("Trends over time",
-                              _graph("timeseries-chart"),
-                              md=12),
-                    ], className="mb-4"),
+                        dbc.Col(_graph("ts-seizures", displaymodebar=False), md=4),
+                        dbc.Col(_graph("ts-price",    displaymodebar=False), md=4),
+                        dbc.Col(_graph("ts-purity",   displaymodebar=False), md=4),
+                    ], className="g-2 mb-2"),
                 ]),
 
                 # --- Panel Q1: seizures -> market ---

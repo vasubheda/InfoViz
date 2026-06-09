@@ -16,7 +16,6 @@ def register(app, data):
     @app.callback(
         Output("selection-store", "data"),
         Output("brushing-info", "children"),
-        Input("timeseries-chart", "clickData"),
         Input("price-ladder", "clickData"),
         Input("priority-heatmap", "clickData"),
         Input("margin-map", "clickData"),
@@ -24,7 +23,7 @@ def register(app, data):
         State("selection-store", "data"),
         prevent_initial_call=True,
     )
-    def update_selection(ts_click, ladder_click, prio_hm_click, margin_click,
+    def update_selection(ladder_click, prio_hm_click, margin_click,
                          reset, current):
         trigger = ctx.triggered_id
         sel = dict(current or _empty())
@@ -39,16 +38,6 @@ def register(app, data):
                 if country:
                     sel["country"] = country
                     return sel, f"Country: {country}"
-
-            if trigger == "timeseries-chart" and ts_click:
-                pt = ts_click["points"][0]
-                sel["year"] = pt.get("x")
-                msg = f"Year {sel['year']}"
-                grp = pt.get("legendgroup")
-                if grp:
-                    sel["substance"] = grp
-                    msg += f" · {grp}"
-                return sel, msg
 
             if trigger == "price-ladder" and ladder_click:
                 pt = ladder_click["points"][0]
@@ -101,6 +90,12 @@ def register(app, data):
     def toggle_substance(_clicks, current):
         clicked = ctx.triggered_id and ctx.triggered_id.get("index")
         if not clicked:
+            return current or []
+        # Ignore spurious fires caused by the substance cards being re-rendered
+        # (new components mount with n_clicks=0; Dash fires ALL-pattern callbacks
+        # for them even though no real click occurred).
+        triggered_value = ctx.triggered[0]["value"] if ctx.triggered else None
+        if not triggered_value:
             return current or []
         active = list(current) if current else list(all_substances)
         if clicked in active:

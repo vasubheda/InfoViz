@@ -16,7 +16,9 @@ from .. import theme
 def register(app, data):
     @app.callback(
         Output("enforcement-map", "figure"),
-        Output("timeseries-chart", "figure"),
+        Output("ts-seizures", "figure"),
+        Output("ts-price", "figure"),
+        Output("ts-purity", "figure"),
         Output("lag-correlation-chart", "figure"),
         Output("lag-limitations", "children"),
         Output("regression-chart", "figure"),
@@ -81,14 +83,17 @@ def register(app, data):
         subst_cards = key_indicators.substance_cards(data, all_substances, active_store)
 
         # Output Defaults (lazy loading - don't update if not active tab)
-        ts = lag_fig = lag_note = reg_fig = reg_stats = ladder = \
+        ts_seiz = ts_price_fig = ts_purity_fig = lag_fig = lag_note = \
+        reg_fig = reg_stats = ladder = \
         m_trend = qprice = prio_hm = margin = arb = prio = border_arb = \
         border_gaps = neigh_map = ki_seiz = ki_price = ki_purity = q2_insight = no_update
 
         # OVERVIEW TAB
         if active_tab == "tab-overview":
             f_comb_outer = apply_filters(data.combined_outer, filters, selection)
-            ts = timeseries.timeseries(data, f_comb_outer, selection, year_range)
+            ts_seiz = timeseries.timeseries_single(data, f_comb_outer, selection, 0)
+            ts_price_fig = timeseries.timeseries_single(data, f_comb_outer, selection, 1)
+            ts_purity_fig = timeseries.timeseries_single(data, f_comb_outer, selection, 2)
             
             tbl_filters = Filters(substances=all_substances, year_range=list(year_range))
             t_seiz = apply_filters(data.seizures, tbl_filters, selection)
@@ -117,10 +122,10 @@ def register(app, data):
                 ladder = price_ladder.price_ladder(data, f_prices, selection)
                 m_trend = margin_trend.margin_trend(data, f_prices, selection)
                 margin = maps.margin_map(data, selection)
-                
+
                 # Insight generation
                 q2_insight = _generate_q2_insight(data.inland_margin, f_prices)
-                
+
             qprice = quality_price.quality_adjusted_price(data, f_comb, selection)
 
         # TAB Q3
@@ -148,7 +153,8 @@ def register(app, data):
             prio_hm = priority_heatmap.priority_heatmap(
                 data, selection, substances, year_range)
 
-        return (enf_map, ts, lag_fig, lag_note, reg_fig, reg_stats, ladder,
+        return (enf_map, ts_seiz, ts_price_fig, ts_purity_fig,
+                lag_fig, lag_note, reg_fig, reg_stats, ladder,
                 m_trend, qprice, prio_hm,
                 margin, arb, prio, border_arb, border_gaps, neigh_map,
                 kpi, ki_seiz, ki_price, ki_purity, subst_cards, q2_insight)
