@@ -50,9 +50,12 @@ def build_layout(data):
                             "using prices, purity & seizures, 2019–2023 (UNODC)",
                             target="title-info"),
                     ], width="auto", className="d-flex align-items-center"),
-                    dbc.Col(dbc.Button("Reset selection", id="reset-button",
-                                       color="danger", size="sm"),
-                            width="auto", className="d-flex align-items-center"),
+                    dbc.Col([
+                        dbc.Button("Reset selection", id="reset-button",
+                                   color="danger", size="sm", className="me-2"),
+                        dbc.Button("❮", id="sidebar-toggle-btn",
+                                   color="secondary", size="sm", outline=True, title="Toggle Sidebar")
+                    ], width="auto", className="d-flex align-items-center"),
                 ], className="g-2 justify-content-between flex-nowrap")),
                 dbc.CardBody([
                     html.Div([
@@ -80,34 +83,38 @@ def build_layout(data):
                     # Total-seizures indicator (relocated from the Overview tab).
                     _loading(html.Div(id="kpi-panel", className="mt-3")),
                 ]),
-            ]), md=4,
+            ], id="master-card"), id="master-col", md=4,
                 style={"position": "sticky", "top": "1rem",
-                       "alignSelf": "flex-start"}),
+                       "alignSelf": "flex-start", "transition": "all 0.3s ease"}),
 
             # ---- DETAIL (right): research-question tabs ----
             # The tab bar is only a selector; every panel below stays mounted so
             # the single figures mega-callback (writes all graphs at once) and
             # the brushing callbacks keep working. Visibility is toggled in
             # callbacks/tabs.py via each panel's `style`.
-            dbc.Col([
-                html.Div(
-                    dbc.Tabs(id="detail-tabs", active_tab="tab-overview",
-                             className="detail-tabs", children=[
-                        dbc.Tab(label="Overview", tab_id="tab-overview"),
-                        dbc.Tab(label="Seizure Impact", tab_id="tab-q1"),
-                        dbc.Tab(label="Profitability", tab_id="tab-q2"),
-                        dbc.Tab(label="Cross-Border", tab_id="tab-q3"),
-                        dbc.Tab(label="Enforcement Priority", tab_id="tab-q45"),
-                    ]),
-                    className="mb-3",
-                    # Keep the tab bar in view while the panel content scrolls.
-                    # Stick flush to the viewport top (top:0) with an opaque
-                    # background and top padding, so no panel content can scroll
-                    # into view above the tabs. The 1rem padding visually keeps
-                    # the tabs aligned with the sticky master panel's top.
-                    style={"position": "sticky", "top": 0, "zIndex": 1020,
-                           "backgroundColor": "#f8f9fa",
-                           "paddingTop": "1rem"}),
+            dbc.Col(id="detail-col", md=8, style={"transition": "all 0.3s ease"}, children=[
+                html.Div([
+                    dbc.Button("❯", id="sidebar-show-btn", color="secondary", size="sm", 
+                               outline=True, className="me-3 align-self-start mt-2", style={"display": "none"}),
+                    html.Div(
+                        dbc.Tabs(id="detail-tabs", active_tab="tab-overview",
+                                 className="detail-tabs", children=[
+                            dbc.Tab(label="Overview", tab_id="tab-overview"),
+                            dbc.Tab(label="Seizure Impact", tab_id="tab-q1"),
+                            dbc.Tab(label="Profitability", tab_id="tab-q2"),
+                            dbc.Tab(label="Cross-Border", tab_id="tab-q3"),
+                            dbc.Tab(label="Enforcement Priority", tab_id="tab-q45"),
+                        ]), style={"flexGrow": 1}
+                    )
+                ], className="mb-3 d-flex align-items-center",
+                   # Keep the tab bar in view while the panel content scrolls.
+                   # Stick flush to the viewport top (top:0) with an opaque
+                   # background and top padding, so no panel content can scroll
+                   # into view above the tabs. The 1rem padding visually keeps
+                   # the tabs aligned with the sticky master panel's top.
+                   style={"position": "sticky", "top": 0, "zIndex": 1020,
+                          "backgroundColor": "#f8f9fa",
+                          "paddingTop": "1rem"}),
 
                 # --- Panel Overview: KPI chips, substance bars, time series ---
                 html.Div(id="panel-overview", children=[
@@ -162,6 +169,9 @@ def build_layout(data):
 
                 # --- Panel Q2: profitability & markup ---
                 html.Div(id="panel-q2", children=[
+                    dbc.Row([
+                        dbc.Col(html.Div(id="q2-insight-banner", className="mb-3")),
+                    ]),
                     dbc.Row([
                         _card("Q2 · Retail vs wholesale price ladder by region "
                               "& substance",
@@ -261,7 +271,7 @@ def build_layout(data):
                                      "filter by country & substance.")),
                     ], className="mb-4"),
                 ]),
-            ], md=8),
+            ]),
         ], className="g-3 mb-4"),
 
         *make_stores(),
