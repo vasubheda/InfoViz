@@ -148,11 +148,13 @@ def build_layout(data):
                         dbc.Col(_graph("ki-purity-bar", displaymodebar=False),
                                 md=4),
                     ], className="g-2 mb-2"),
-                    dbc.Row([
+                    # Hidden when a single year is selected (no trend to draw);
+                    # visibility is toggled in callbacks/figures.py.
+                    html.Div(id="ts-row", children=dbc.Row([
                         dbc.Col(_graph("ts-seizures", displaymodebar=False), md=4),
                         dbc.Col(_graph("ts-price",    displaymodebar=False), md=4),
                         dbc.Col(_graph("ts-purity",   displaymodebar=False), md=4),
-                    ], className="g-2 mb-2"),
+                    ], className="g-2 mb-2")),
                 ]),
 
                 # --- Panel Q1: seizures -> market ---

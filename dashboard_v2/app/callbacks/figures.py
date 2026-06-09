@@ -92,18 +92,16 @@ def register(app, data):
 
         # OVERVIEW TAB
         if active_tab == "tab-overview":
-            # A single-year range has no trend to draw (one point per series), so
-            # show a short placeholder instead of a misleading lone-dot chart.
-            if year_range[0] == year_range[1]:
-                msg = (f"Select a year range (≥2 years) to see trends — "
-                       f"only {year_range[0]} is selected.")
-                ts_seiz = ts_price_fig = ts_purity_fig = helpers.empty_fig(msg, 260)
-            else:
+            # A single-year range has no trend to draw (one point per series).
+            # The whole time-series row is hidden in that case (see the
+            # ts-row visibility callback below), so only build the figures when
+            # there is an actual range.
+            if year_range[0] != year_range[1]:
                 f_comb_outer = apply_filters(data.combined_outer, filters, selection)
                 ts_seiz = timeseries.timeseries_single(data, f_comb_outer, selection, 0)
                 ts_price_fig = timeseries.timeseries_single(data, f_comb_outer, selection, 1)
                 ts_purity_fig = timeseries.timeseries_single(data, f_comb_outer, selection, 2)
-            
+
             tbl_filters = Filters(substances=all_substances, year_range=list(year_range))
             t_seiz = apply_filters(data.seizures, tbl_filters, selection)
             t_prices = apply_filters(data.prices, tbl_filters, selection)
@@ -162,6 +160,16 @@ def register(app, data):
                 m_trend, qprice, prio_hm,
                 margin, prio, border_arb, border_gaps, neigh_map,
                 kpi, ki_seiz, ki_price, ki_purity, subst_cards, q2_insight)
+
+    # Hide the Overview time-series row when a single year is selected (no trend
+    # to draw); the substance bars above it stay visible.
+    @app.callback(
+        Output("ts-row", "style"),
+        Input("year-from", "value"),
+        Input("year-to", "value"),
+    )
+    def _toggle_ts_row(year_from, year_to):
+        return {"display": "none"} if year_from == year_to else {}
 
 
 def _lag_limitations(data):
