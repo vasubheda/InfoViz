@@ -39,11 +39,19 @@ IMPUTE_PLAN = {
 }
 
 
-def _interpolate_group(g: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
-    g = g.sort_values("Year")
+def _interpolate_within_groups(df: pd.DataFrame, cols: list[str],
+                               group: list[str]) -> pd.DataFrame:
+    """Linear-interpolate ``cols`` over Year within each ``group``, internal
+    gaps only. Sorting the whole frame by (group, Year) up front lets us use a
+    groupby ``transform`` (index-aligned, per-group, in Year order) instead of
+    a ``groupby.apply`` — the latter's ``include_groups`` arg was removed in
+    pandas 3.0.
+    """
+    df = df.sort_values(group + ["Year"]).reset_index(drop=True)
     for c in cols:
-        g[c] = g[c].interpolate(method="linear", limit_area="inside")
-    return g
+        df[c] = df.groupby(group, sort=False)[c].transform(
+            lambda s: s.interpolate(method="linear", limit_area="inside"))
+    return df
 
 
 def _median_fill(df: pd.DataFrame, col: str, keys: list[str]) -> pd.Series:
@@ -71,11 +79,7 @@ def impute_table(df: pd.DataFrame, name: str) -> tuple[pd.DataFrame, dict]:
 
     # Method A: temporal interpolation within group (price/purity only).
     if plan["interpolate"]:
-        df = (
-            df.groupby(group, group_keys=False)
-            .apply(lambda g: _interpolate_group(g, cols), include_groups=True)
-            .reset_index(drop=True)
-        )
+        df = _interpolate_within_groups(df, cols, group)
         for col in cols:
             if col not in df.columns:
                 continue
