@@ -247,7 +247,14 @@ def build_layout(data):
                     ]),
                     dbc.Row([
                         _card("Q2 · Highest retail–wholesale markup by country",
-                              _graph("margin-map", "Click a country to filter"),
+                              _graph("margin-map",
+                                     "Per country, the substance with the "
+                                     "biggest markup — left ranks by relative "
+                                     "% , right by absolute $/g. Colours match "
+                                     "the master-panel substance legend; grey = "
+                                     "no data. ▶ animates the selected year "
+                                     "range; latest year shown by default. "
+                                     "Click a country to filter."),
                               md=12),
                     ], className="mb-4"),
                     dbc.Row([
