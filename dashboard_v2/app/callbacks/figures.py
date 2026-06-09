@@ -141,7 +141,7 @@ def register(app, data):
             else:
                 ladder = price_ladder.price_ladder(data, f_prices, selection)
                 m_trend = margin_trend.margin_trend(data, f_prices, selection)
-                margin = maps.margin_map(data, selection)
+                margin = maps.margin_map(data, selection, substances)
 
                 # Insight generation
                 q2_insight = _generate_q2_insight(data.inland_margin, f_prices)

@@ -246,12 +246,8 @@ def build_layout(data):
                         dbc.Col(html.Div(id="q2-insight-banner", className="mb-3")),
                     ]),
                     dbc.Row([
-                        _card("Q2 · Retail vs wholesale price ladder by region "
-                              "& substance",
-                              _graph("price-ladder",
-                                     "Each rung links wholesale (●) to retail "
-                                     "(○); bar length = markup. Click a rung to "
-                                     "filter by region & substance."),
+                        _card("Q2 · Highest retail–wholesale markup by country",
+                              _graph("margin-map", "Click a country to filter"),
                               md=12),
                     ], className="mb-4"),
                     dbc.Row([
@@ -270,8 +266,12 @@ def build_layout(data):
                               md=6),
                     ], className="mb-4"),
                     dbc.Row([
-                        _card("Q2 · Highest retail–wholesale markup by country",
-                              _graph("margin-map", "Click a country to filter"),
+                        _card("Q2 · Retail vs wholesale price ladder by region "
+                              "& substance",
+                              _graph("price-ladder",
+                                     "Each rung links wholesale (●) to retail "
+                                     "(○); bar length = markup. Click a rung to "
+                                     "filter by region & substance."),
                               md=12),
                     ], className="mb-4"),
                 ]),

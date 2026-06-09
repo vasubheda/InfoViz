@@ -77,10 +77,17 @@ def enforcement_map(data, map_seizures, selection):
 
 
 @memoize_figure()
-def margin_map(data, selection):
-    """Q2: substance with the highest retail-vs-wholesale markup per country."""
+def margin_map(data, selection, substances=None):
+    """Q2: substance with the highest retail-vs-wholesale markup per country.
+
+    `substances` (the active master-legend set) restricts which substances can
+    win each country, so deselecting one drops it from the per-country max and
+    the next-highest selected substance takes over.
+    """
     margin = data.inland_margin
     margin = margin[margin["Substance"] != "Other"]
+    if substances:
+        margin = margin[margin["Substance"].isin(set(substances))]
     if selection.get("substance"):
         margin = margin[margin["Substance"] == selection["substance"]]
     if selection.get("countries"):
