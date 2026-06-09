@@ -23,9 +23,6 @@ ACCENT_ALT = "#0072B2"    # secondary accent (blue)
 PLOT_BG = "rgba(240,240,240,0.5)"
 GRID = "rgba(128,128,128,0.2)"
 
-# Marker styling for imputed observations (hollow + dashed outline).
-IMPUTED_MARKER = dict(symbol="circle-open", line=dict(width=2, dash="dot"))
-
 
 def substance_color_map(substances) -> dict:
     """Deterministic substance -> hex assignment, cycling the Tol palette.
