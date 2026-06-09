@@ -85,7 +85,10 @@ def build_layout(data):
                 ]),
             ], id="master-card"), id="master-col", md=4,
                 style={"position": "sticky", "top": "1rem",
-                       "alignSelf": "flex-start", "transition": "all 0.3s ease"}),
+                       "alignSelf": "flex-start", "transition": "all 0.3s ease",
+                       # Match the detail tab bar's 1rem top padding so the
+                       # master card aligns with the detail section's tabs.
+                       "paddingTop": "1rem"}),
 
             # ---- DETAIL (right): research-question tabs ----
             # The tab bar is only a selector; every panel below stays mounted so
