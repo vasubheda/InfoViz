@@ -164,7 +164,8 @@ def _kpi(seiz, prices):
     # (The old two-card KPI row — total seizures + countries — was dropped from
     # the Overview tab; the country count is already surfaced beside the map.)
     total_t = seiz["Kilograms"].sum() / 1000 if len(seiz) else 0
-    color = theme.ACCENT_ALT
+    # Match the master-panel section headings (e.g. "YEAR RANGE").
+    color = "#495057"
     return dbc.Card(dbc.CardBody([
         html.H4(f"{total_t:,.1f}", className="mb-0", style={"color": color}),
         html.P("Total seizures (t), current selection",

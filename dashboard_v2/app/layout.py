@@ -136,6 +136,7 @@ def build_layout(data):
                 ]),
 
                 # --- Panel Q1: seizures -> market ---
+                # The two cards are stacked full-width (one above the other).
                 html.Div(id="panel-q1", children=[
                     dbc.Row([
                         _card("Q1 · Do seizures move the market? "
@@ -149,7 +150,10 @@ def build_layout(data):
                                _loading(dcc.Graph(id="lag-correlation-chart",
                                          config={"displayModeBar": False})),
                                html.Div(id="lag-limitations",
-                                        className="small text-muted mt-2")]),
+                                        className="small text-muted mt-2")],
+                              md=12),
+                    ], className="mb-3"),
+                    dbc.Row([
                         _card("Q1 · Correlation detail by substance",
                               [dbc.Row([
                                   dbc.Col(dcc.Dropdown(id="x-axis", clearable=False,
@@ -165,7 +169,8 @@ def build_layout(data):
                               ], className="mb-2"),
                                _loading(dcc.Graph(id="regression-chart")),
                                html.Div(id="regression-stats",
-                                        className="mt-2 small text-muted")]),
+                                        className="mt-2 small text-muted")],
+                              md=12),
                     ], className="mb-4"),
                 ]),
 

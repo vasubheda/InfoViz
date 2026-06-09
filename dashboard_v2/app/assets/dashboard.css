@@ -45,3 +45,21 @@
     border-bottom: 2px solid #0072B2;
     font-weight: 600;
 }
+
+/* Year-range slider: track, handles and active marks in the heading gray. */
+#year-slider .rc-slider-track {
+    background-color: #495057;
+}
+#year-slider .rc-slider-handle {
+    border-color: #495057;
+    background-color: #495057;
+}
+#year-slider .rc-slider-handle:hover,
+#year-slider .rc-slider-handle:active,
+#year-slider .rc-slider-handle-click-focused:focus {
+    border-color: #495057;
+    box-shadow: 0 0 0 5px rgba(73, 80, 87, 0.2);
+}
+#year-slider .rc-slider-dot-active {
+    border-color: #495057;
+}
