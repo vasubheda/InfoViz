@@ -40,15 +40,21 @@ def register(app, data):
         Output("q2-insight-banner", "children"),
         Input("substance-select-store", "data"),
         Input("country-store", "data"),
-        Input("year-slider", "value"),
+        Input("year-from", "value"),
+        Input("year-to", "value"),
         Input("x-axis", "value"),
         Input("y-axis", "value"),
         Input("selection-store", "data"),
         Input("detail-tabs", "active_tab"),
     )
-    def update(active_store, countries, year_range, x_axis, y_axis,
+    def update(active_store, countries, year_from, year_to, x_axis, y_axis,
                selection, active_tab):
         selection = dict(selection or {})
+
+        # The From/To dropdowns are independent, so the pair can arrive reversed
+        # (From > To); normalise to [low, high] so filtering and the single-year
+        # guard (From == To) behave regardless of which end is larger.
+        year_range = sorted([year_from, year_to])
 
         # Active substances come from the Key-indicators legend store.
         # Empty list -> treat as "all substances".
@@ -86,10 +92,17 @@ def register(app, data):
 
         # OVERVIEW TAB
         if active_tab == "tab-overview":
-            f_comb_outer = apply_filters(data.combined_outer, filters, selection)
-            ts_seiz = timeseries.timeseries_single(data, f_comb_outer, selection, 0)
-            ts_price_fig = timeseries.timeseries_single(data, f_comb_outer, selection, 1)
-            ts_purity_fig = timeseries.timeseries_single(data, f_comb_outer, selection, 2)
+            # A single-year range has no trend to draw (one point per series), so
+            # show a short placeholder instead of a misleading lone-dot chart.
+            if year_range[0] == year_range[1]:
+                msg = (f"Select a year range (≥2 years) to see trends — "
+                       f"only {year_range[0]} is selected.")
+                ts_seiz = ts_price_fig = ts_purity_fig = helpers.empty_fig(msg, 260)
+            else:
+                f_comb_outer = apply_filters(data.combined_outer, filters, selection)
+                ts_seiz = timeseries.timeseries_single(data, f_comb_outer, selection, 0)
+                ts_price_fig = timeseries.timeseries_single(data, f_comb_outer, selection, 1)
+                ts_purity_fig = timeseries.timeseries_single(data, f_comb_outer, selection, 2)
             
             tbl_filters = Filters(substances=all_substances, year_range=list(year_range))
             t_seiz = apply_filters(data.seizures, tbl_filters, selection)

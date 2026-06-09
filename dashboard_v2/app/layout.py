@@ -63,11 +63,31 @@ def build_layout(data):
                                   children="Click any chart to filter the rest."),
                     ], className="text-muted small mb-3"),
                     html.H6("Year range", className="master-heading"),
-                    dcc.RangeSlider(id="year-slider", min=data.year_min,
-                                    max=data.year_max,
-                                    value=[data.year_min, data.year_max],
-                                    marks={y: str(y) for y in years}, step=1,
-                                    className="mb-3"),
+                    # Two dropdowns (From / To) instead of a RangeSlider: every
+                    # combination — including a single year (From == To) — is
+                    # selectable, with none of the Dash-4 Radix-slider
+                    # thumb-overlap quirks. The figures callback normalises the
+                    # pair so order never matters.
+                    dbc.Row([
+                        dbc.Col([
+                            html.Label("From", className="small text-muted mb-1"),
+                            dcc.Dropdown(
+                                id="year-from", clearable=False,
+                                searchable=False,
+                                value=data.year_min,
+                                options=[{"label": str(y), "value": y}
+                                         for y in years]),
+                        ], width=6),
+                        dbc.Col([
+                            html.Label("To", className="small text-muted mb-1"),
+                            dcc.Dropdown(
+                                id="year-to", clearable=False,
+                                searchable=False,
+                                value=data.year_max,
+                                options=[{"label": str(y), "value": y}
+                                         for y in years]),
+                        ], width=6),
+                    ], className="g-2 mb-3"),
                     html.Div([
                         html.H6("Regions & countries",
                                 className="master-heading mb-0"),
