@@ -105,3 +105,19 @@ def register(app, data):
             active = [s for s in all_substances if s in active or s == clicked]
         # Falling back to all-active when nothing is left keeps "[] = all" tidy.
         return [] if set(active) == set(all_substances) or not active else active
+
+    # The Temporal-tab substance dropdown offers exactly the substances active in
+    # the master legend ([] = all). It keeps the current pick when that pick is
+    # still active, otherwise falls back to the first available substance.
+    @app.callback(
+        Output("temporal-substance", "options"),
+        Output("temporal-substance", "value"),
+        Input("substance-select-store", "data"),
+        State("temporal-substance", "value"),
+    )
+    def sync_temporal_substance(active, current):
+        avail = active or all_substances
+        avail = [s for s in all_substances if s in set(avail)]
+        options = [{"label": s, "value": s} for s in avail]
+        value = current if current in avail else (avail[0] if avail else None)
+        return options, value

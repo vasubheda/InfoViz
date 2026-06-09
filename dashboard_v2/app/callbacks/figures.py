@@ -8,7 +8,7 @@ from dash import Input, Output, State, html, no_update
 
 from ..figures import (border_arbitrage, helpers, key_indicators, lag_corr,
                        maps, margin_trend, multivariate, price_ladder, priority,
-                       priority_heatmap, quality_price, timeseries)
+                       priority_heatmap, quality_price, temporal_maps, timeseries)
 from ..figures.filtering import Filters, apply_filters
 from .. import theme
 
@@ -16,6 +16,7 @@ from .. import theme
 def register(app, data):
     @app.callback(
         Output("enforcement-map", "figure"),
+        Output("temporal-maps", "figure"),
         Output("ts-seizures", "figure"),
         Output("ts-price", "figure"),
         Output("ts-purity", "figure"),
@@ -46,9 +47,11 @@ def register(app, data):
         Input("y-axis", "value"),
         Input("selection-store", "data"),
         Input("detail-tabs", "active_tab"),
+        Input("temporal-metric", "value"),
+        Input("temporal-substance", "value"),
     )
     def update(active_store, countries, year_from, year_to, x_axis, y_axis,
-               selection, active_tab):
+               selection, active_tab, temporal_metric, temporal_substance):
         selection = dict(selection or {})
 
         # The From/To dropdowns are independent, so the pair can arrive reversed
@@ -85,6 +88,7 @@ def register(app, data):
         subst_cards = key_indicators.substance_cards(data, all_substances, active_store)
 
         # Output Defaults (lazy loading - don't update if not active tab)
+        temp_maps = no_update
         ts_seiz = ts_price_fig = ts_purity_fig = lag_fig = lag_note = \
         reg_fig = reg_stats = ladder = \
         m_trend = qprice = prio_hm = margin = prio = border_arb = \
@@ -108,6 +112,15 @@ def register(app, data):
             t_comb = apply_filters(data.combined, tbl_filters, selection)
             ki_seiz, ki_price, ki_purity = key_indicators.substance_bars(
                 data, all_substances, active_store, t_seiz, t_prices, t_comb)
+
+        # TEMPORAL TAB — animated map of one metric for one substance. The full
+        # continent is always drawn (grey base); a country subset just restricts
+        # which countries are coloured AND the colour scale's min-max, so the
+        # user can exclude outliers and rescale by deselecting them.
+        elif active_tab == "tab-temporal":
+            temp_maps = temporal_maps.temporal_maps(
+                data, temporal_metric, temporal_substance, year_range,
+                countries=countries)
 
         # TAB Q1
         elif active_tab == "tab-q1":
@@ -155,7 +168,7 @@ def register(app, data):
             prio_hm = priority_heatmap.priority_heatmap(
                 data, selection, substances, year_range)
 
-        return (enf_map, ts_seiz, ts_price_fig, ts_purity_fig,
+        return (enf_map, temp_maps, ts_seiz, ts_price_fig, ts_purity_fig,
                 lag_fig, lag_note, reg_fig, reg_stats, ladder,
                 m_trend, qprice, prio_hm,
                 margin, prio, border_arb, border_gaps, neigh_map,

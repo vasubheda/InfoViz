@@ -121,6 +121,7 @@ def build_layout(data):
                         dbc.Tabs(id="detail-tabs", active_tab="tab-overview",
                                  className="detail-tabs", children=[
                             dbc.Tab(label="Overview", tab_id="tab-overview"),
+                            dbc.Tab(label="Temporal", tab_id="tab-temporal"),
                             dbc.Tab(label="Seizure Impact", tab_id="tab-q1"),
                             dbc.Tab(label="Profitability", tab_id="tab-q2"),
                             dbc.Tab(label="Cross-Border", tab_id="tab-q3"),
@@ -154,6 +155,50 @@ def build_layout(data):
                         dbc.Col(_graph("ts-price",    displaymodebar=False), md=4),
                         dbc.Col(_graph("ts-purity",   displaymodebar=False), md=4),
                     ], className="g-2 mb-2")),
+                ]),
+
+                # --- Panel Temporal: a metric for one substance, mapped & animated ---
+                html.Div(id="panel-temporal", children=[
+                    dbc.Row([
+                        _card("Metric by country, over time (animated)",
+                              [html.Small("A chosen metric per country. Price and "
+                                          "purity split into retail (left) vs "
+                                          "wholesale (right); seizures show a "
+                                          "single total. ▶ animates the selected "
+                                          "year range (latest year shown by "
+                                          "default). Grey = no data for the "
+                                          "metric/substance/year. Purity is "
+                                          "%-measured only (mg/tablet excluded).",
+                                          className="text-muted d-block mb-2"),
+                               dbc.Row([
+                                   dbc.Col([
+                                       html.Label("Metric", className="small "
+                                                  "text-muted mb-1"),
+                                       dcc.Dropdown(id="temporal-metric",
+                                                    clearable=False,
+                                                    searchable=False,
+                                                    value="purity",
+                                                    options=[
+                                                        {"label": "Price (USD/g)",
+                                                         "value": "price"},
+                                                        {"label": "Purity (%)",
+                                                         "value": "purity"},
+                                                        {"label": "Seizures (t)",
+                                                         "value": "seizures"}],
+                                                    className="small"),
+                                   ], md=6),
+                                   dbc.Col([
+                                       html.Label("Substance", className="small "
+                                                  "text-muted mb-1"),
+                                       dcc.Dropdown(id="temporal-substance",
+                                                    clearable=False,
+                                                    searchable=False,
+                                                    className="small"),
+                                   ], md=6),
+                               ], className="mb-2"),
+                               _loading(dcc.Graph(id="temporal-maps"))],
+                              md=12),
+                    ], className="mb-4"),
                 ]),
 
                 # --- Panel Q1: seizures -> market ---
