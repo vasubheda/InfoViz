@@ -5,11 +5,13 @@ from plotly.subplots import make_subplots
 
 from .. import theme
 from . import helpers
+from .cache import memoize_figure
 
 LABELS = {"Typical_USD": "Price (USD/g)", "Typical": "Purity (%)",
           "Kilograms": "Kilograms seized"}
 
 
+@memoize_figure()
 def regression_facets(data, filtered_combined, x_axis, y_axis):
     """Per-substance scatter + OLS line; returns (figure, stats_children)."""
     from dash import html

@@ -9,8 +9,10 @@ import plotly.graph_objects as go
 
 from .. import theme
 from . import helpers
+from .cache import memoize_figure
 
 
+@memoize_figure()
 def margin_trend(data, filtered_prices, selection, height=420):
     if len(filtered_prices) == 0:
         return helpers.empty_fig("No data available", height)

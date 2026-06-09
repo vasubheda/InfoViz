@@ -8,8 +8,10 @@ from plotly.subplots import make_subplots
 
 from .. import theme
 from . import helpers
+from .cache import memoize_figure
 
 
+@memoize_figure()
 def price_ladder(data, filtered_prices, selection, height=400):
     if len(filtered_prices) == 0:
         return helpers.empty_fig("No data available", height)

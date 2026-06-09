@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 
 from .. import theme
 from . import helpers
+from .cache import memoize_figure
 
 # Opacity for a bar whose substance is currently deselected (dimmed-but-visible).
 _DIM_OPACITY = 0.22
@@ -53,6 +54,7 @@ def _bar(substances, values, colors, title, hover_unit,
     return fig
 
 
+@memoize_figure()
 def substance_bars(data, all_substances, active, seiz, prices, comb, height=260):
     """Return (seizures, avg-price, avg-purity) bar figures for active substances only."""
     active_subs = list(_active_set(all_substances, active) & set(all_substances))

@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 
 from .. import theme
 from . import helpers
+from .cache import memoize_figure
 
 # (column, transform, y-axis label, imputed-flag column, aggregation)
 METRICS = [
@@ -13,6 +14,7 @@ METRICS = [
 ]
 
 
+@memoize_figure()
 def timeseries_single(data, filtered_combined, selection, metric_index, height=260):
     """Animated line chart for one metric — lines draw left-to-right year by year.
 

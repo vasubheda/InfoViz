@@ -8,8 +8,10 @@ import plotly.graph_objects as go
 
 from .. import theme
 from . import helpers
+from .cache import memoize_figure
 
 
+@memoize_figure()
 def lag_correlation(data, selection, target="Typical_USD"):
     lag = data.lag_correlation
     lag = lag[lag["target"] == target]

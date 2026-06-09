@@ -8,8 +8,10 @@ import plotly.graph_objects as go
 
 from .. import theme
 from . import helpers
+from .cache import memoize_figure
 
 
+@memoize_figure()
 def priority_dotplot(data, selection, substances, year_range):
     df = data.enforcement_metrics
     df = df[df["Substance"].isin(substances) & (df["Substance"] != "Other")]

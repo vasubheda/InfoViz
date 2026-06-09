@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 
 from .. import theme
 from . import helpers
+from .cache import memoize_figure
 
 
 def subregion_order(data):
@@ -24,6 +25,7 @@ def _selected_countries(selection):
     return list(selection.get("countries") or [])
 
 
+@memoize_figure()
 def enforcement_map(data, map_seizures, selection):
     """Single-level choropleth: every country coloured by its subregion.
 
@@ -74,6 +76,7 @@ def enforcement_map(data, map_seizures, selection):
     return helpers.base_geo_layout(fig, right_margin=10)
 
 
+@memoize_figure()
 def margin_map(data, selection):
     """Q2: substance with the highest retail-vs-wholesale markup per country."""
     margin = data.inland_margin

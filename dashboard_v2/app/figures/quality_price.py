@@ -8,8 +8,10 @@ import plotly.graph_objects as go
 
 from .. import theme
 from . import helpers
+from .cache import memoize_figure
 
 
+@memoize_figure()
 def quality_adjusted_price(data, filtered_combined, selection, height=420):
     df = filtered_combined
     df = df[(df["Substance"] != "Other") & (df["Typical"] > 0)]

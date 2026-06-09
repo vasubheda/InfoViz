@@ -12,33 +12,90 @@ export incentive out of C). This shows border patrol which shared borders carry
 the strongest smuggling pull and in which direction - the kind of cross-market
 gap a purely domestic retail-wholesale markup misses.
 
-Land borders are derived from the geojson geometry (a small buffer absorbs
-coastline/topology gaps), so adjacency is data-driven, not hand-coded.
+Land-border adjacency is a hard-coded lookup (``_LAND_BORDERS``) using the
+geojson ``NAME`` spelling. It was generated once from the geojson geometry (a
+2 km buffer absorbed coastline/topology gaps); baking it in avoids running a
+CRS reprojection + buffer + spatial-intersection over all of Europe on every
+Q3 interaction. Names that carry no smuggling-relevant land border (islands:
+Cyprus, Iceland, Malta; enclaves with none in-dataset: Gibraltar) map to [].
 """
 import plotly.graph_objects as go
 
 from .. import theme
 from . import helpers
+from .cache import memoize_figure
 
-_NEIGHBOUR_CACHE = {}
-_BORDER_BUFFER_M = 2000  # 2 km: bridges thin gaps between adjacent polygons
+# Symmetric land-border adjacency, geojson NAME spelling. See module docstring.
+_LAND_BORDERS = {
+    "Albania": ["Greece", "Montenegro", "Serbia",
+                "The former Yugoslav Republic of Macedonia"],
+    "Andorra": ["France", "Spain"],
+    "Austria": ["Czech Republic", "Germany", "Hungary", "Italy",
+                "Liechtenstein", "Slovakia", "Slovenia"],
+    "Belarus": ["Latvia", "Lithuania", "Poland", "Russia", "Ukraine"],
+    "Belgium": ["France", "Germany", "Luxembourg", "Netherlands"],
+    "Bosnia and Herzegovina": ["Croatia", "Montenegro", "Serbia"],
+    "Bulgaria": ["Greece", "Romania", "Serbia",
+                 "The former Yugoslav Republic of Macedonia", "Turkey"],
+    "Croatia": ["Bosnia and Herzegovina", "Hungary", "Montenegro", "Serbia",
+                "Slovenia"],
+    "Cyprus": [],
+    "Czech Republic": ["Austria", "Germany", "Poland", "Slovakia"],
+    "Denmark": ["Germany"],
+    "Estonia": ["Latvia", "Russia"],
+    "Finland": ["Norway", "Russia", "Sweden"],
+    "France": ["Andorra", "Belgium", "Germany", "Italy", "Luxembourg", "Spain"],
+    "Germany": ["Austria", "Belgium", "Czech Republic", "Denmark", "France",
+                "Luxembourg", "Netherlands", "Poland"],
+    "Gibraltar": [],
+    "Greece": ["Albania", "Bulgaria",
+               "The former Yugoslav Republic of Macedonia", "Turkey"],
+    "Hungary": ["Austria", "Croatia", "Romania", "Serbia", "Slovakia",
+                "Slovenia", "Ukraine"],
+    "Iceland": [],
+    "Ireland": ["United Kingdom"],
+    "Italy": ["Austria", "France", "Slovenia"],
+    "Latvia": ["Belarus", "Estonia", "Lithuania", "Russia"],
+    "Liechtenstein": ["Austria"],
+    "Lithuania": ["Belarus", "Latvia", "Poland", "Russia"],
+    "Luxembourg": ["Belgium", "France", "Germany"],
+    "Malta": [],
+    "Montenegro": ["Albania", "Bosnia and Herzegovina", "Croatia", "Serbia"],
+    "Netherlands": ["Belgium", "Germany"],
+    "Norway": ["Finland", "Russia", "Sweden"],
+    "Poland": ["Belarus", "Czech Republic", "Germany", "Lithuania", "Russia",
+               "Slovakia", "Ukraine"],
+    "Portugal": ["Spain"],
+    "Republic of Moldova": ["Romania", "Ukraine"],
+    "Romania": ["Bulgaria", "Hungary", "Republic of Moldova", "Serbia",
+                "Ukraine"],
+    "Russia": ["Belarus", "Estonia", "Finland", "Latvia", "Lithuania",
+               "Norway", "Poland", "Ukraine"],
+    "Serbia": ["Albania", "Bosnia and Herzegovina", "Bulgaria", "Croatia",
+               "Hungary", "Montenegro", "Romania",
+               "The former Yugoslav Republic of Macedonia"],
+    "Slovakia": ["Austria", "Czech Republic", "Hungary", "Poland", "Ukraine"],
+    "Slovenia": ["Austria", "Croatia", "Hungary", "Italy"],
+    "Spain": ["Andorra", "France", "Portugal"],
+    "Sweden": ["Finland", "Norway"],
+    "The former Yugoslav Republic of Macedonia": ["Albania", "Bulgaria",
+                                                  "Greece", "Serbia"],
+    "Turkey": ["Bulgaria", "Greece"],
+    "Ukraine": ["Belarus", "Hungary", "Poland", "Republic of Moldova",
+                "Romania", "Russia", "Slovakia"],
+    "United Kingdom": ["Ireland"],
+}
 
 
 def neighbours_of(data, country):
-    """Land neighbours of ``country`` that also appear in the price data."""
-    if country in _NEIGHBOUR_CACHE:
-        return _NEIGHBOUR_CACHE[country]
-    gdf = data.europe_gdf
-    if country not in set(gdf["NAME"]):
-        _NEIGHBOUR_CACHE[country] = []
-        return []
-    metric = gdf.to_crs(3035)
-    geom = metric[metric["NAME"] == country].geometry.iloc[0].buffer(_BORDER_BUFFER_M)
-    touching = metric[metric.geometry.intersects(geom) & (metric["NAME"] != country)]
+    """Land neighbours of ``country`` that also appear in the price data.
+
+    Adjacency is the baked-in ``_LAND_BORDERS`` table; the price-data filter is
+    applied at call time so the result still tracks whatever countries are
+    actually priced (identical behaviour to the old geometry-derived version).
+    """
     priced = set(data.prices["Country"].unique())
-    result = sorted(n for n in touching["NAME"].unique() if n in priced)
-    _NEIGHBOUR_CACHE[country] = result
-    return result
+    return sorted(n for n in _LAND_BORDERS.get(country, []) if n in priced)
 
 
 def _mean_price(prices, country, substance, level):
@@ -147,6 +204,7 @@ def _compute_rows(data, filtered_prices, filtered_seizures, country, substances)
     return rows
 
 
+@memoize_figure()
 def border_arbitrage(data, filtered_prices, filtered_seizures, country, substances):
     """Diverging per-(neighbour, substance) best-arbitrage bars for ``country``.
 
@@ -209,6 +267,7 @@ def border_arbitrage(data, filtered_prices, filtered_seizures, country, substanc
     return fig
 
 
+@memoize_figure()
 def priority_gap_list(data, filtered_prices, filtered_seizures, country, substances):
     """Ranked HTML list of the flagged priority-gap corridors (for the report).
 
@@ -256,6 +315,7 @@ def priority_gap_list(data, filtered_prices, filtered_seizures, country, substan
     ], className="small")
 
 
+@memoize_figure()
 def neighbour_map(data, country):
     """Small choropleth highlighting the selected country and its neighbours."""
     if not country:
