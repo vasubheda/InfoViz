@@ -257,30 +257,6 @@ def build_layout(data):
                                      "Click a country to filter."),
                               md=12),
                     ], className="mb-4"),
-                    dbc.Row([
-                        _card("Q2 · Retail–wholesale markup over time",
-                              _graph("margin-trend",
-                                     "Relative markup (%) by substance, "
-                                     "2019–2023 — is the gap widening or "
-                                     "narrowing?"),
-                              md=6),
-                        _card("§5 · Quality-adjusted price (price ÷ purity) by "
-                              "substance",
-                              _graph("quality-price",
-                                     "Raw $/g vs purity-normalised cost — the "
-                                     "'true' price once potency is accounted "
-                                     "for."),
-                              md=6),
-                    ], className="mb-4"),
-                    dbc.Row([
-                        _card("Q2 · Retail vs wholesale price ladder by region "
-                              "& substance",
-                              _graph("price-ladder",
-                                     "Each rung links wholesale (●) to retail "
-                                     "(○); bar length = markup. Click a rung to "
-                                     "filter by region & substance."),
-                              md=12),
-                    ], className="mb-4"),
                 ]),
 
                 # --- Panel Q3: cross-border spillover ---
@@ -334,7 +310,7 @@ def build_layout(data):
         html.Div(
             html.P("Data: UNODC World Drug Report 2019–2023 · "
                    "Built with Dash/Plotly · Palettes: Paul Tol Muted "
-                   "(categorical), Viridis (sequential), RdBu (diverging)",
+                   "(categorical), Viridis (sequential)",
                    className="text-center text-muted small mb-0"),
             style={"position": "fixed", "bottom": 0, "left": 0, "right": 0,
                    "zIndex": 1030, "backgroundColor": "#f8f9fa",

@@ -16,14 +16,13 @@ def register(app, data):
     @app.callback(
         Output("selection-store", "data"),
         Output("brushing-info", "children"),
-        Input("price-ladder", "clickData"),
         Input("priority-heatmap", "clickData"),
         Input("margin-map", "clickData"),
         Input("reset-button", "n_clicks"),
         State("selection-store", "data"),
         prevent_initial_call=True,
     )
-    def update_selection(ladder_click, prio_hm_click, margin_click,
+    def update_selection(prio_hm_click, margin_click,
                          reset, current):
         trigger = ctx.triggered_id
         sel = dict(current or _empty())
@@ -38,19 +37,6 @@ def register(app, data):
                 if country:
                     sel["country"] = country
                     return sel, f"Country: {country}"
-
-            if trigger == "price-ladder" and ladder_click:
-                pt = ladder_click["points"][0]
-                # customdata = [substance, region, ws, rt, markup]
-                cd = pt.get("customdata") or []
-                substance = cd[0] if len(cd) > 0 else pt.get("y")
-                region = cd[1] if len(cd) > 1 else None
-                sel["substance"] = substance
-                # store canonical SubRegion (append ' Europe' if needed)
-                if region:
-                    sel["subregion"] = (region if "Europe" in region
-                                        else f"{region} Europe")
-                return sel, f"Price ladder: {region}, {substance}"
 
             if trigger == "priority-heatmap" and prio_hm_click:
                 pt = prio_hm_click["points"][0]

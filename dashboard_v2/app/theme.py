@@ -2,8 +2,7 @@
 
 Everything visual draws from here so the colourblind-safe claim is enforced in
 one place (the original app advertised accessibility yet used a red-green
-diverging scale). Categorical = Paul Tol Muted; sequential = Viridis;
-diverging = RdBu (colourblind-safe, replaces the old RdYlGn).
+diverging scale). Categorical = Paul Tol Muted; sequential = Viridis.
 """
 
 # Paul Tol's Muted qualitative palette (colourblind-safe).
@@ -14,7 +13,6 @@ TOL_MUTED = [
 ]
 
 SEQUENTIAL = "Viridis"
-DIVERGING = "RdBu"        # colourblind-safe diverging (was RdYlGn)
 
 # Accent colours used for selection markers / regression lines (Wong-safe).
 ACCENT = "#D55E00"        # selection highlight (orange)

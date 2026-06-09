@@ -6,9 +6,9 @@ frozen-panel bug).
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, html, no_update
 
-from ..figures import (border_arbitrage, helpers, key_indicators, lag_corr,
-                       maps, margin_trend, multivariate, price_ladder, priority,
-                       priority_heatmap, quality_price, temporal_maps, timeseries)
+from ..figures import (border_arbitrage, key_indicators, lag_corr,
+                       maps, multivariate, priority,
+                       priority_heatmap, temporal_maps, timeseries)
 from ..figures.filtering import Filters, apply_filters
 from .. import theme
 
@@ -24,9 +24,6 @@ def register(app, data):
         Output("lag-limitations", "children"),
         Output("regression-chart", "figure"),
         Output("regression-stats", "children"),
-        Output("price-ladder", "figure"),
-        Output("margin-trend", "figure"),
-        Output("quality-price", "figure"),
         Output("priority-heatmap", "figure"),
         Output("margin-map", "figure"),
         Output("priority-chart", "figure"),
@@ -70,7 +67,6 @@ def register(app, data):
         # single-country context (drives per-country views like the Q1 lag
         # bars); several -> a multi-country subset.
         countries = countries or []
-        country_filter_active = len(countries) > 0
         if len(countries) == 1:
             selection["country"] = countries[0]
             selection["countries"] = None
@@ -90,8 +86,8 @@ def register(app, data):
         # Output Defaults (lazy loading - don't update if not active tab)
         temp_maps = no_update
         ts_seiz = ts_price_fig = ts_purity_fig = lag_fig = lag_note = \
-        reg_fig = reg_stats = ladder = \
-        m_trend = qprice = prio_hm = margin = prio = border_arb = \
+        reg_fig = reg_stats = \
+        prio_hm = margin = prio = border_arb = \
         border_gaps = neigh_map = ki_seiz = ki_price = ki_purity = q2_insight = no_update
 
         # OVERVIEW TAB
@@ -133,21 +129,11 @@ def register(app, data):
 
         # TAB Q2
         elif active_tab == "tab-q2":
-            f_comb = apply_filters(data.combined, filters, selection)
-            if country_filter_active:
-                ladder = m_trend = helpers.filter_note_fig(400)
-                margin = helpers.filter_note_fig(400)
-                q2_insight = html.Div()
-            else:
-                ladder = price_ladder.price_ladder(data, f_prices, selection)
-                m_trend = margin_trend.margin_trend(data, f_prices, selection)
-                margin = maps.margin_map(data, selection, substances,
-                                         year_range=list(year_range))
-
-                # Insight generation
-                q2_insight = _generate_q2_insight(data.inland_margin, f_prices)
-
-            qprice = quality_price.quality_adjusted_price(data, f_comb, selection)
+            # The margin map draws the whole continent (grey base) and handles a
+            # country subset internally, so it always renders.
+            margin = maps.margin_map(data, selection, substances,
+                                     year_range=list(year_range))
+            q2_insight = _generate_q2_insight(data.inland_margin, f_prices)
 
         # TAB Q3
         elif active_tab == "tab-q3":
@@ -170,8 +156,7 @@ def register(app, data):
                 data, selection, substances, year_range)
 
         return (enf_map, temp_maps, ts_seiz, ts_price_fig, ts_purity_fig,
-                lag_fig, lag_note, reg_fig, reg_stats, ladder,
-                m_trend, qprice, prio_hm,
+                lag_fig, lag_note, reg_fig, reg_stats, prio_hm,
                 margin, prio, border_arb, border_gaps, neigh_map,
                 kpi, ki_seiz, ki_price, ki_purity, subst_cards, q2_insight)
 
