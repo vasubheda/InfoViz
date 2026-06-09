@@ -57,11 +57,10 @@ def build_layout(data):
                     ], width="auto", className="d-flex align-items-center"),
                 ], className="g-2 justify-content-between flex-nowrap")),
                 dbc.CardBody([
-                    html.Div([
-                        html.Strong("Linked selection: ", className="me-1"),
-                        html.Span(id="brushing-info",
-                                  children="Click any chart to filter the rest."),
-                    ], className="text-muted small mb-3"),
+                    # The brushing-info span is still written to by the selection
+                    # callback, so it stays in the DOM but is hidden (the visible
+                    # "Linked selection: …" hint was removed).
+                    html.Span(id="brushing-info", style={"display": "none"}),
                     html.H6("Year range", className="master-heading"),
                     # Two dropdowns (From / To) instead of a RangeSlider: every
                     # combination — including a single year (From == To) — is
