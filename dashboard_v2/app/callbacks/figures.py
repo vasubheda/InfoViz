@@ -28,7 +28,6 @@ def register(app, data):
         Output("quality-price", "figure"),
         Output("priority-heatmap", "figure"),
         Output("margin-map", "figure"),
-        Output("arbitrage-map", "figure"),
         Output("priority-chart", "figure"),
         Output("border-arbitrage-chart", "figure"),
         Output("border-arbitrage-gaps", "children"),
@@ -44,14 +43,11 @@ def register(app, data):
         Input("year-slider", "value"),
         Input("x-axis", "value"),
         Input("y-axis", "value"),
-        Input("arb-country", "value"),
-        Input("arb-substance", "value"),
-        Input("arb-level", "value"),
         Input("selection-store", "data"),
         Input("detail-tabs", "active_tab"),
     )
     def update(active_store, countries, year_range, x_axis, y_axis,
-               arb_country, arb_substance, arb_level, selection, active_tab):
+               selection, active_tab):
         selection = dict(selection or {})
 
         # Active substances come from the Key-indicators legend store.
@@ -85,7 +81,7 @@ def register(app, data):
         # Output Defaults (lazy loading - don't update if not active tab)
         ts_seiz = ts_price_fig = ts_purity_fig = lag_fig = lag_note = \
         reg_fig = reg_stats = ladder = \
-        m_trend = qprice = prio_hm = margin = arb = prio = border_arb = \
+        m_trend = qprice = prio_hm = margin = prio = border_arb = \
         border_gaps = neigh_map = ki_seiz = ki_price = ki_purity = q2_insight = no_update
 
         # OVERVIEW TAB
@@ -130,11 +126,6 @@ def register(app, data):
 
         # TAB Q3
         elif active_tab == "tab-q3":
-            if country_filter_active:
-                arb = helpers.filter_note_fig(400)
-            else:
-                arb = maps.arbitrage_map(data, f_prices, arb_country, arb_substance, arb_level)
-                
             single_country = countries[0] if len(countries) == 1 else None
             geo_unfiltered = {"country": None, "countries": None,
                               "substance": selection.get("substance"),
@@ -156,7 +147,7 @@ def register(app, data):
         return (enf_map, ts_seiz, ts_price_fig, ts_purity_fig,
                 lag_fig, lag_note, reg_fig, reg_stats, ladder,
                 m_trend, qprice, prio_hm,
-                margin, arb, prio, border_arb, border_gaps, neigh_map,
+                margin, prio, border_arb, border_gaps, neigh_map,
                 kpi, ki_seiz, ki_price, ki_purity, subst_cards, q2_insight)
 
 

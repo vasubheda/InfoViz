@@ -29,7 +29,6 @@ def _card(title, body, md=6, className="detail-card"):
 
 
 def build_layout(data):
-    substances = data.substances
     years = list(range(data.year_min, data.year_max + 1))
 
     return dbc.Container([
@@ -208,34 +207,6 @@ def build_layout(data):
 
                 # --- Panel Q3: cross-border spillover ---
                 html.Div(id="panel-q3", children=[
-                    dbc.Row([
-                        _card("Q3 · Cross-border price-arbitrage exposure",
-                              [dbc.Row([
-                                  dbc.Col([html.Label("Reference country:", className="fw-bold small"),
-                                           dcc.Dropdown(id="arb-country", clearable=False,
-                                               className="small mb-2",
-                                               options=[{"label": c, "value": c} for c in data.countries],
-                                               value=data.countries[0])], md=4),
-                                  dbc.Col([html.Label("Substance:", className="fw-bold small"),
-                                           dcc.Dropdown(id="arb-substance", clearable=False,
-                                               className="small mb-2",
-                                               options=[{"label": s, "value": s} for s in substances],
-                                               value=substances[0])], md=4),
-                                  dbc.Col([html.Label("Level:", className="fw-bold small"),
-                                           dcc.Dropdown(id="arb-level", clearable=False,
-                                               className="small mb-2",
-                                               options=[{"label": "Retail", "value": "Retail"},
-                                                        {"label": "Wholesale", "value": "Wholesale"}],
-                                               value="Retail")], md=4),
-                              ]),
-                               html.Small("Δ price vs the reference country "
-                                          "signals where a displaced market "
-                                          "could be more profitable — a "
-                                          "spillover-risk indicator, not a "
-                                          "selling guide.",
-                                          className="text-muted d-block mb-1"),
-                               _loading(dcc.Graph(id="arbitrage-map"))], md=12),
-                    ], className="mb-4"),
                     dbc.Row([
                         _card("Q3 · Where to focus border control: best "
                               "cross-border wholesale→retail arbitrage",
