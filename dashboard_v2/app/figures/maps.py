@@ -142,6 +142,55 @@ def _discrete_colorscale(colors):
     return scale
 
 
+def margin_highlights(data, selection, substances=None, year_range=None):
+    """Ranked HTML callout of the single highest relative- and absolute-markup
+    (Country · Substance) winners in the current selection.
+
+    Same visual language as the cross-border priority-gap list: a coloured
+    substance swatch, the corridor/country in bold, and the figure in small
+    text. Surfaced at the top of the Q2 card body.
+    """
+    from dash import html
+
+    yr = year_range or [int(data.prices["Year"].min()),
+                        int(data.prices["Year"].max())]
+    p = data.prices[data.prices["Year"].between(yr[0], yr[1])]
+    p = p[p["Country"].isin(set(data.europe_gdf["NAME"]))]
+
+    win = _margin_winners(p, substances, selection)
+    if win is None or len(win) == 0:
+        return html.Small("No markup data for the current selection.",
+                          className="text-muted")
+
+    def _top(metric, unit, fmt):
+        d = win[win["Metric"] == metric]
+        if len(d) == 0:
+            return None
+        row = d.loc[d["Value"].idxmax()]
+        swatch = data.substance_color_map.get(row["Substance"], "#888")
+        return html.Li([
+            html.Span(style={"display": "inline-block", "width": "10px",
+                             "height": "10px", "borderRadius": "50%",
+                             "backgroundColor": swatch, "marginRight": "6px"}),
+            html.Strong(f"{row['Country']} · {row['Substance']} "),
+            html.Span(f"{fmt.format(row['Value'])}{unit} "
+                      f"(retail ${row['Retail']:,.0f}/g · "
+                      f"wholesale ${row['Wholesale']:,.0f}/g)",
+                      className="small"),
+        ], className="mb-1")
+
+    items = [li for li in (
+        _top(_REL_LABEL, "% markup", "{:,.0f}"),
+        _top(_ABS_LABEL, "/g markup", "${:,.0f}"),
+    ) if li is not None]
+
+    return html.Div([
+        html.Strong("Highest markups in the current selection "
+                    "(relative & absolute):"),
+        html.Ul(items, className="mt-2 mb-0"),
+    ], className="small")
+
+
 @memoize_figure()
 def margin_map(data, selection, substances=None, year_range=None, height=520):
     """Q2: per country, the substance with the highest retail-vs-wholesale markup.

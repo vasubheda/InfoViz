@@ -273,7 +273,7 @@ def border_arbitrage(data, filtered_prices, filtered_seizures, country, substanc
     height = max(360, len(rows) * 22 + 130)
     fig.update_layout(
         title=(f"Best cross-border arbitrage at {country}'s land borders "
-               f"(wholesale → retail) · {n_priority} priority gap(s) ⚑"),
+               f"(wholesale → retail)"),
         xaxis_title=f"◀ Import into {country}   (best margin, USD/g)   "
                     f"Export from {country} ▶",
         height=height, margin=dict(l=180, r=40, t=70, b=50),

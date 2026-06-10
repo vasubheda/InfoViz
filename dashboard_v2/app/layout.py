@@ -275,7 +275,9 @@ def build_layout(data):
                                    "the selected year range; latest year shown "
                                    "by default. Click a country to filter.",
                                    target="q2-info", placement="bottom")],
-                              _graph("margin-map"),
+                              [html.Div(id="margin-highlights",
+                                        className="mb-3"),
+                               *_graph("margin-map")],
                               md=12),
                     ], className="mb-4"),
                 ]),

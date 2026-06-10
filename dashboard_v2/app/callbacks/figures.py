@@ -23,6 +23,7 @@ def register(app, data):
         Output("regression-chart", "figure"),
         Output("regression-stats", "children"),
         Output("margin-map", "figure"),
+        Output("margin-highlights", "children"),
         Output("border-arbitrage-chart", "figure"),
         Output("border-arbitrage-gaps", "children"),
         Output("market-flow-map", "figure"),
@@ -87,7 +88,7 @@ def register(app, data):
         # Output Defaults (lazy loading - don't update if not active tab)
         temp_maps = no_update
         ts_seiz = ts_price_fig = ts_purity_fig = lag_fig = lag_note = \
-        reg_fig = reg_stats = margin = border_arb = \
+        reg_fig = reg_stats = margin = margin_hi = border_arb = \
         border_gaps = flow_map = neigh_map = ki_seiz = ki_price = ki_purity = \
         sr_seiz = sr_price = sr_purity = no_update
 
@@ -139,6 +140,8 @@ def register(app, data):
             # country subset internally, so it always renders.
             margin = maps.margin_map(data, selection, substances,
                                      year_range=list(year_range))
+            margin_hi = maps.margin_highlights(data, selection, substances,
+                                               year_range=list(year_range))
 
         # TAB Q3
         elif active_tab == "tab-q3":
@@ -170,7 +173,7 @@ def register(app, data):
 
         return (enf_map, temp_maps, ts_seiz, ts_price_fig, ts_purity_fig,
                 lag_fig, lag_note, reg_fig, reg_stats,
-                margin, border_arb, border_gaps, flow_map, neigh_map,
+                margin, margin_hi, border_arb, border_gaps, flow_map, neigh_map,
                 kpi, ki_seiz, ki_price, ki_purity,
                 sr_seiz, sr_price, sr_purity, subst_cards)
 
