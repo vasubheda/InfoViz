@@ -8,18 +8,19 @@ This is a clean rewrite of the earlier `src/` prototype. It separates a
 documented, reproducible **data-cleaning pipeline** (which writes versioned
 artifacts) from a **modular app** that only ever reads those artifacts.
 
-## Research questions → views
+## Research questions -> views
 
-| RQ | View |
-|----|------|
-| Q1 Do seizures move the market? | Within-country, 1-year-lagged seizure→price/purity correlation + per-substance regression facets |
-| Q2 Which markets have the highest markup? | Retail↔wholesale price-ladder (dumbbell) + markup-over-time trend + highest retail-wholesale markup choropleth |
-| Q3 How do localised seizures affect neighbours? | Cross-border price-arbitrage exposure map (spillover-risk indicator - see *Deviation from the proposal* below) |
-| Q4 Which markets are most profitable? | Enforcement-priority composite index (Cleveland dot plot) |
-| Q5 Which drugs to focus on per country? | Country × substance enforcement-priority heatmap (+ semantic-zoom seizure map) |
+The app has four tabs. The master panel (region/subregion choropleth, year-range
+slider, substance toggles) brushes every view via cross-chart linking.
 
-The proposal's *quality-adjusted price* feature (price ÷ purity) is surfaced as a
-dedicated raw-vs-purity-normalised price chart by substance.
+| Tab | Research question | Views |
+|-----|-------------------|-------|
+| Overview | Cross-cutting market snapshot | Per-substance bars (seizures, price, purity) + animated time-series trends + the same three metrics broken out by subregion |
+| National | Q2 Which markets have the highest markup? | Animated metric-by-country choropleth (price/purity split retail vs wholesale, seizures as one panel) + animated highest retail-wholesale markup map (relative % and absolute $/g) |
+| Cross-Border | Q3 How do localised seizures affect neighbours? | Cross-border wholesale→retail price-arbitrage. Single country: per-neighbour arbitrage bars + a neighbours map. Multiple/all countries: best-corridor flow map + ranked top-25 arbitrage corridors. (Spillover-*risk* indicator - see *Deviation from the proposal* below) |
+| Seizure Impact | Q1 Do seizures move the market? | Within-country, 1-year-lagged seizure→price correlation (aggregated across countries via Fisher-z, or per-country when one is selected) + a per-substance scatter with selectable x/y axes and fit line |
+| Cross-Border | Q4 Which markets are most profitable? | Priority-gap flagging on the arbitrage views: high-margin, low-seizure corridors are outlined and listed as the markets where enforcement pays off most |
+| Cross-Border | Q5 Which drugs to focus on per country? | Per-neighbour / per-corridor arbitrage broken out by substance, so the highest-margin drug to target is visible per country |
 
 ## Note on the framework
 
@@ -31,33 +32,48 @@ differs.
 
 ## Deviation from the proposal: Q3
 
-The proposal framed Q3 as *"how do localised seizure events impact neighbouring
-countries' drug markets?"* - a backward-looking causal effect. With only five
-years of data (2019-2023), a robust cross-border seizure→neighbour-price lag is
-not estimable (too few paired observations per border). We therefore deliver Q3
-as a **cross-border price-arbitrage exposure** indicator: built on geojson
-land-border adjacency, it shows where price gaps make a displaced market more
-profitable across a shared border - a forward-looking spillover-*risk* view
-rather than a measured causal estimate. The analytic intent (cross-border market
-effects) is preserved; only the framing is sharpened to match what 5 years of
-data can support.
+Our proposal asked for Q3 as *"how do localised seizure events impact
+neighbouring countries' drug markets?"*, which is basically asking for a cause
+and effect over time. The problem is we only have five years of data (2019-2023),
+so there aren't enough paired years per border to actually measure a
+seizure→neighbour-price lag in a reliable way.
+
+So instead we answer Q3 with a **cross-border price-arbitrage** view. Using the
+geojson land borders to find which countries touch, we show where the price gap
+between two neighbours makes smuggling across that border more profitable. It's
+more of a "where is the risk" view looking forward, rather than proving a cause
+after the fact. We still cover the same idea (cross-border market effects), we
+just framed it to fit what 5 years of data can realistically show.
 
 ## Data handling highlights
 
-- **Standalone pipeline** (`pipeline/`) → versioned parquet artifacts under
-  `data/clean/v1/` + a `manifest.json` recording row counts, imputation counts,
-  source hashes, and unmatched countries.
-- **Imputation with provenance flags**: sporadic missing prices/purity are filled
-  by within-series temporal interpolation, then group-median fallback, each
-  filled cell flagged `*_is_imputed`. Seizure volumes are *never* imputed
-  (a missing year is not a zero). The `*_is_imputed` flags are carried through to
-  the cleaned artifacts so downstream views can distinguish observed from filled
-  values.
-- **Colourblind-safe throughout**: one `app/theme.py` palette source - Paul Tol
-  Muted (categorical), Viridis (sequential), RdBu (diverging). No red-green.
-- **Rigorous Q1**: the lagged correlation is computed *within each country*
-  then aggregated across countries via a Fisher-z, sample-weighted mean with a
-  95% CI - not pooled across heterogeneous markets. Limitations are stated in-app.
+Most of the messy bits of the raw UNODC data get cleaned up in the pipeline, and
+the lookup tables that drive those transformations all live in one place
+(`pipeline/config.py`) so they're easy to find and tweak.
+
+- **Substance grouping**: the raw data uses a bunch of different labels for the
+  same drug (e.g. "Cocaine-type", "Cocaine-type drugs"). We map all of those down
+  to a fixed set of categories with `SUBSTANCE_MAP`, and anything that doesn't
+  match becomes `"Other"`. This is what lets us compare the same substances across
+  countries and years.
+- **Country names**: the price/seizure spreadsheets and the geojson map don't
+  always spell countries the same way, so `COUNTRY_MAP` renames a few of them
+  (e.g. "Russian Federation" -> "Russia", "Czechia" -> "Czech Republic") so the
+  data actually joins onto the map.
+- **Unit conversion**: prices come in all sorts of units (per kilogram, per ounce,
+  "10 gram", per litre, etc.). To make them comparable we convert everything to a
+  single base unit using two tables: `UNIT_CONVERSION` rescales the amount (e.g.
+  kilogram = 1000, ounce ≈ 29.57) and `UNIT_NAME_MAP` collapses all the unit
+  labels into Gram / Millilitre / Piece. We also pull the leading number out of
+  labels like "10 gram" so the price is divided by the right amount.
+- **Imputation with flags**: sporadic missing prices/purity get filled in (first
+  by interpolating over time within a series, then a group-median fallback), and
+  every filled cell is flagged `*_is_imputed` so views can tell real values from
+  filled ones. Seizure volumes are never filled in - a missing year isn't a zero.
+- **Versioned output**: the pipeline writes parquet artifacts under
+  `data/clean/v1/` plus a `manifest.json` with row counts, imputation counts,
+  source hashes and any countries that didn't match the map. Bump
+  `ARTIFACT_VERSION` in the config when the cleaning logic changes.
 
 ## Running
 
@@ -65,32 +81,19 @@ data can support.
 # 1. install
 pip install -r requirements.txt
 
-# 2. build cleaned artifacts (idempotent; never mutates raw)
+# 2. build cleaned artifacts
 python -m pipeline.build_artifacts --version 1
 
 # 3. run the app
 python -m app.server          # dev server at http://localhost:8050
-# or, production:
-gunicorn app.server:server
 ```
 
 The app fails fast with a clear message if the artifacts are missing.
 
-## Tests
-
-```bash
-python -m pytest pipeline/tests -q
-```
-
-Covers unit conversion, the substance taxonomy, imputation flagging (incl. the
-seizures-never-imputed rule), the lag-correlation minimum-n guard, and artifact
-presence/sanity.
-
 ## Layout
 
 ```
-pipeline/   load → normalize → impute → features → correlate → build_artifacts
-data/       raw/ (xlsx, input only) · europe.geojson · clean/v1/ (artifacts)
-app/        theme · data_access · figures/ (pure builders) · components ·
-            layout · callbacks/ (selection store, figures, animation, zoom) · server
+pipeline/   transform data for dashboard
+data/       raw/ (xlsx, input only), europe.geojson, clean/v1/ (artifacts)
+app/        dashboard
 ```

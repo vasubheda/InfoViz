@@ -1,4 +1,3 @@
-# colours live here so everything stays colourblind-safe
 # paul tol muted palette
 TOL_MUTED = [
     "#332288", "#88CCEE", "#44AA99", "#117733",
