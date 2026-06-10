@@ -464,18 +464,20 @@ def market_flow_map(data, filtered_prices, filtered_seizures, pool, substances,
 
 
 @memoize_figure()
-def market_arbitrage(data, filtered_prices, filtered_seizures, pool, substances):
+def market_arbitrage(data, filtered_prices, filtered_seizures, pool, substances,
+                     cap=_MARKET_TOP_N):
     """Ranked cross-market arbitrage corridors across a selected country pool.
 
     Used when multiple/all countries are selected (no single anchor): one bar
     per (substance, origin → destination) corridor, ranked by spread and capped
-    at the top 25. Bars whose corridor is the best for its substance — i.e. the
-    ones drawn as arrows on the flow map above — carry a ▸ marker. Same visual
-    language as the single-country chart (hue = substance, opacity = corridor
-    seizure pressure, ⚑ outline = priority gap).
+    at the top ``cap`` (user-adjustable; defaults to 25). Bars whose corridor is
+    the best for its substance — i.e. the ones drawn as arrows on the flow map
+    above — carry a ▸ marker. Same visual language as the single-country chart
+    (hue = substance, opacity = corridor seizure pressure, ⚑ outline = priority
+    gap).
     """
     rows = _market_rows(filtered_prices, filtered_seizures, pool, substances,
-                        cap=_MARKET_TOP_N)
+                        cap=cap)
     if not rows:
         return helpers.empty_fig(
             "No matched wholesale/retail price pairs for the current "
@@ -525,12 +527,17 @@ def market_arbitrage(data, filtered_prices, filtered_seizures, pool, substances)
 
 
 @memoize_figure()
-def market_gap_list(data, filtered_prices, filtered_seizures, pool, substances):
-    """Ranked HTML list of the flagged priority market spreads (for the report)."""
+def market_gap_list(data, filtered_prices, filtered_seizures, pool, substances,
+                    cap=_MARKET_TOP_N):
+    """Ranked HTML list of the flagged priority market spreads (for the report).
+
+    ``cap`` matches the corridor bar chart's cap so the listed priority gaps are
+    exactly those among the displayed corridors.
+    """
     from dash import html
 
     rows = _market_rows(filtered_prices, filtered_seizures, pool, substances,
-                        cap=_MARKET_TOP_N)
+                        cap=cap)
     if not rows:
         return html.Small(
             "Select countries to list cross-market arbitrage spreads.",

@@ -285,12 +285,24 @@ def build_layout(data):
                                           "select multiple / all countries to map "
                                           "the best arbitrage corridor per "
                                           "substance (cheapest wholesale → "
-                                          "priciest retail) and rank the top 25 "
-                                          "corridors below.",
+                                          "priciest retail) and rank the top "
+                                          "corridors below (adjustable).",
                                           className="text-muted d-block mb-1"),
                                html.Div(_loading(dcc.Graph(id="market-flow-map")),
                                         id="q3-flow-wrap",
                                         style={"display": "none"}),
+                               # Multi-country only: how many ranked corridors to
+                               # show. Hidden in single-country mode (see
+                               # _toggle_q3_layout in callbacks/figures.py).
+                               html.Div([
+                                   html.Label("Corridors to show (by spread)",
+                                              className="small text-muted mb-1"),
+                                   dcc.Slider(id="q3-top-n", min=5, max=50,
+                                              step=5, value=25,
+                                              marks={n: str(n) for n in
+                                                     (5, 10, 25, 50)},
+                                              tooltip={"placement": "bottom"}),
+                               ], id="q3-topn-wrap", className="mb-2"),
                                _loading(dcc.Graph(id="border-arbitrage-chart")),
                                html.Div(id="border-arbitrage-gaps",
                                         className="mt-2")], md=8,

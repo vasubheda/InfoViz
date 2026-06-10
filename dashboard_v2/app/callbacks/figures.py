@@ -50,9 +50,11 @@ def register(app, data):
         Input("detail-tabs", "active_tab"),
         Input("temporal-metric", "value"),
         Input("temporal-substance", "value"),
+        Input("q3-top-n", "value"),
     )
     def update(active_store, countries, year_from, year_to, x_axis, y_axis,
-               selection, active_tab, temporal_metric, temporal_substance):
+               selection, active_tab, temporal_metric, temporal_substance,
+               q3_top_n):
         selection = dict(selection or {})
 
         # The From/To dropdowns are independent, so the pair can arrive reversed
@@ -168,9 +170,11 @@ def register(app, data):
                 flow_map = border_arbitrage.market_flow_map(
                     data, arb_prices, arb_seiz, countries, substances)
                 border_arb = border_arbitrage.market_arbitrage(
-                    data, arb_prices, arb_seiz, countries, substances)
+                    data, arb_prices, arb_seiz, countries, substances,
+                    cap=q3_top_n)
                 border_gaps = border_arbitrage.market_gap_list(
-                    data, arb_prices, arb_seiz, countries, substances)
+                    data, arb_prices, arb_seiz, countries, substances,
+                    cap=q3_top_n)
 
         # TAB Q45
         elif active_tab == "tab-q45":
@@ -202,12 +206,16 @@ def register(app, data):
         Output("q3-chart-col", "md"),
         Output("q3-neighbour-col", "style"),
         Output("q3-flow-wrap", "style"),
+        Output("q3-topn-wrap", "style"),
         Input("country-store", "data"),
     )
     def _toggle_q3_layout(countries):
         single = len(countries or []) == 1
         hide = {"display": "none"}
-        return (8 if single else 12), ({} if single else hide), (hide if single else {})
+        # The corridor-count slider only applies to the multi-country market
+        # chart, so it shares the flow map's single-country-hidden behaviour.
+        return ((8 if single else 12), ({} if single else hide),
+                (hide if single else {}), (hide if single else {}))
 
 
 def _lag_limitations(data):
