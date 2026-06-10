@@ -1,5 +1,5 @@
 """Choropleth maps: the semantic-zoom enforcement map, the retail-wholesale
-margin map (Q2), and the cross-border price-arbitrage exposure map (Q3).
+margin map (Q2), and the cross-border price-arbitrage exposure map ().
 """
 import pandas as pd
 import plotly.express as px
@@ -164,7 +164,7 @@ def _discrete_colorscale(colors):
 
 def margin_highlights(data, selection, substances=None, year_range=None):
     """Ranked HTML callout of the single highest relative- and absolute-markup
-    (Country · Substance) winners in the current selection.
+    (Country - Substance) winners in the current selection.
 
     Same visual language as the cross-border priority-gap list: a coloured
     substance swatch, the corridor/country in bold, and the figure in small
@@ -192,9 +192,9 @@ def margin_highlights(data, selection, substances=None, year_range=None):
             html.Span(style={"display": "inline-block", "width": "10px",
                              "height": "10px", "borderRadius": "50%",
                              "backgroundColor": swatch, "marginRight": "6px"}),
-            html.Strong(f"{row['Country']} · {row['Substance']} "),
+            html.Strong(f"{row['Country']} + {row['Substance']} "),
             html.Span(f"{fmt.format(row['Value'])}{unit} "
-                      f"(retail ${row['Retail']:,.0f}/g · "
+                      f"({int(row['Year'])}; retail ${row['Retail']:,.0f}/g | "
                       f"wholesale ${row['Wholesale']:,.0f}/g)",
                       className="small"),
         ], className="mb-1")
@@ -273,7 +273,7 @@ def margin_map(data, selection, substances=None, year_range=None, height=520):
             text=d["Substance"], customdata=d[["Value", "Retail", "Wholesale"]],
             hovertemplate=("<b>%{location}</b><br>%{text}<br>"
                            "markup: %{customdata[0]:,.1f}<br>"
-                           "retail $%{customdata[1]:,.0f}/g · "
+                           "retail $%{customdata[1]:,.0f}/g | "
                            "wholesale $%{customdata[2]:,.0f}/g<extra></extra>"))
 
     default_year = years[-1]

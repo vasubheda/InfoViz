@@ -1,4 +1,4 @@
-"""Within-country lagged seizure->price correlation (Q1).
+"""Within-country lagged seizure->price correlation ().
 
 Default view: substance-level aggregated r̄ (Fisher-z weighted mean across
 countries) with a 95% CI whisker and a significance marker. When a country is
@@ -78,7 +78,7 @@ def _bar(data, rows, country, target, ci):
 
     scope = country if country else "across countries (Fisher-z weighted mean)"
     fig.update_layout(
-        title=f"Seizures(Y) → {metric}(Y+1) · {scope} · * = significant",
+        title=f"Seizures(Y) → {metric}(Y+1) | {scope} | * = significant",
         xaxis_title=f"Pearson r (seizures → {metric}, +1yr)", height=300,
         margin=dict(l=150, r=40, t=50, b=40),
         xaxis=dict(range=[-1, 1], gridcolor=theme.GRID, zeroline=True),

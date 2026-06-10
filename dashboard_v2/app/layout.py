@@ -183,7 +183,7 @@ def build_layout(data):
                 # retail/wholesale markup map below it ---
                 html.Div(id="panel-national", children=[
                     dbc.Row([
-                        _card(["Metric by country, over time",
+                        _card(["Metric by country over time",
                                html.I(className="bi bi-info-circle text-muted "
                                       "ms-1", id="temporal-info",
                                       style={"cursor": "help"}),
@@ -192,7 +192,7 @@ def build_layout(data):
                                    "purity are averaged per country within each "
                                    "year; seizures are summed. Price and purity "
                                    "split into retail (left) vs wholesale "
-                                   "(right); seizures show a single total. ▶ "
+                                   "(right); seizures show a single total. Playbutton "
                                    "animates the selected year range (latest "
                                    "year shown by default). Grey = no data for "
                                    "the metric/substance/year. Purity is "
@@ -232,7 +232,7 @@ def build_layout(data):
                     # Profitability: retail-wholesale markup map, below the
                     # over-time metric map.
                     dbc.Row([
-                        _card(["Q2 Highest retail-wholesale markup by country ",
+                        _card([" Highest retail-wholesale markup by country ",
                                html.I(className="bi bi-info-circle text-muted "
                                       "ms-1", id="q2-info",
                                       style={"cursor": "help"}),
@@ -243,7 +243,7 @@ def build_layout(data):
                                    "are averaged per country within each year, "
                                    "then the markup is their spread. Colours "
                                    "match the master-panel substance legend; "
-                                   "grey = no data. ▶ animates the selected "
+                                   "grey = no data. Playbutton animates the selected "
                                    "year range; latest year shown by default. "
                                    "Click a country to filter.",
                                    target="q2-info", placement="bottom")],
@@ -254,11 +254,11 @@ def build_layout(data):
                     ], className="mb-4"),
                 ]),
 
-                # --- Panel Q1: seizures -> market ---
+                # --- Panel : seizures -> market ---
                 # The two cards are stacked full-width (one above the other).
                 html.Div(id="panel-q1", children=[
                     dbc.Row([
-                        _card(["Q1 Do seizures move the market? "
+                        _card([" Do seizures move the market? "
                                "(within-country, +1yr lag) ",
                                html.I(className="bi bi-info-circle text-muted "
                                       "ms-1", id="q1-lag-info",
@@ -277,7 +277,7 @@ def build_layout(data):
                               md=12),
                     ], className="mb-3"),
                     dbc.Row([
-                        _card("Q1 Correlation detail by substance",
+                        _card(" Correlation detail by substance",
                               [dbc.Row([
                                   dbc.Col(dcc.Dropdown(id="x-axis", clearable=False,
                                           value="Kilograms", className="small",
@@ -297,11 +297,11 @@ def build_layout(data):
                     ], className="mb-4"),
                 ]),
 
-                # --- Panel Q3: cross-border spillover ---
+                # --- Panel : cross-border spillover ---
                 html.Div(id="panel-q3", children=[
                     dbc.Row([
                         _card([
-                            "Q3 Where to focus border control: best "
+                            " Where to focus border control: best "
                             "cross-border wholesale→retail arbitrage ",
                             html.I(className="bi bi-info-circle text-muted ms-1",
                                    id="q3-info", style={"cursor": "help"}),

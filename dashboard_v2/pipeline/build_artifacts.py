@@ -57,7 +57,7 @@ def run(version: int = cfg.ARTIFACT_VERSION) -> dict:
     combined = features.build_combined(prices, purity, seizures)
     enforcement = features.enforcement_metrics(margin, seizures)
 
-    # 9: within-country lagged correlation (Q1)
+    # 9: within-country lagged correlation ()
     lag = correlate.lag_correlation(prices, purity, seizures)
 
     # 10: write artifacts

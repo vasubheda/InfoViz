@@ -1,4 +1,4 @@
-"""Multivariate views: per-substance regression facets (Q1)."""
+"""Multivariate views: per-substance regression facets ()."""
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots

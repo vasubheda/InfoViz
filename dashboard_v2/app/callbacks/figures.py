@@ -1,5 +1,5 @@
 """The single figures callback: global filters + selection + map-driven country
--> every figure. Each figure is produced by a pure builder; the Q1 lag charts
+-> every figure. Each figure is produced by a pure builder; the  lag charts
 re-aggregate under the active selection (fixing the old app's frozen-panel bug).
 """
 import dash_bootstrap_components as dbc
@@ -194,7 +194,7 @@ def register(app, data):
             margin_hi = maps.margin_highlights(data, selection, substances,
                                                year_range=list(year_range))
 
-        # TAB Q1
+        # TAB 
         elif active_tab == "tab-q1":
             f_comb = apply_filters(data.combined, filters, selection)
             lag_fig = lag_corr.lag_correlation(data, selection,
@@ -203,9 +203,9 @@ def register(app, data):
             lag_note = _lag_limitations(data)
             reg_fig, reg_stats = multivariate.regression_facets(data, f_comb, x_axis, y_axis)
 
-        # TAB Q3
+        # TAB 
         elif active_tab == "tab-q3":
-            # Q3 is a single-year snapshot (prices meaned / seizures summed
+            #  is a single-year snapshot (prices meaned / seizures summed
             # within one year), not an average across the From/To range. Clamp
             # the slider's value into the current range; default to the latest
             # year when it is None (first load) or stale after a range change.
@@ -254,7 +254,7 @@ def register(app, data):
     def _toggle_ts_row(year_from, year_to):
         return {"display": "none"} if year_from == year_to else {}
 
-    # Q3 has two modes: a single clicked country shows its land-border arbitrage
+    #  has two modes: a single clicked country shows its land-border arbitrage
     # beside a neighbour map (chart md=8 + map md=4); any other selection (all or
     # a multi-country subset) shows a borderless per-substance market spread at
     # full width, with the neighbour-map column hidden.
@@ -270,9 +270,9 @@ def register(app, data):
         return ((8 if single else 12), ({} if single else hide),
                 (hide if single else {}))
 
-    # Keep the Q3 year slider's bounds/marks in sync with the global From/To
+    # Keep the  year slider's bounds/marks in sync with the global From/To
     # range, snapping its value into range. The slider is a single-year picker
-    # (Q3 shows one year's snapshot), so a single-year From==To range collapses
+    # ( shows one year's snapshot), so a single-year From==To range collapses
     # it to that lone year.
     @app.callback(
         Output("q3-year", "min"),

@@ -199,7 +199,7 @@ def _compute_rows(data, filtered_prices, filtered_seizures, country, substances)
 
             corridor_t = (_seized_tons(filtered_seizures, country, s)
                           + _seized_tons(filtered_seizures, n, s))
-            rows.append({"label": f"{n} · {s}", "signed": signed, "margin": margin,
+            rows.append({"label": f"{n} + {s}", "signed": signed, "margin": margin,
                          "substance": s, "direction": direction,
                          "buy": buy, "sell": sell, "corridor_t": corridor_t,
                          "neighbour": n})
@@ -275,7 +275,7 @@ def border_arbitrage(data, filtered_prices, filtered_seizures, country, substanc
         title=(f"Best cross-border arbitrage at {country}'s land borders "
                f"(wholesale → retail)"),
         xaxis_title=f"◀ Import into {country}   (best margin, USD/g)   "
-                    f"Export from {country} ▶",
+                    f"Export from {country} Playbutton",
         height=height, margin=dict(l=180, r=40, t=70, b=50),
         xaxis=dict(gridcolor=theme.GRID, zeroline=True),
         yaxis=dict(gridcolor=theme.GRID, tickfont=dict(size=10)),
@@ -323,7 +323,7 @@ def priority_gap_list(data, filtered_prices, filtered_seizures, country, substan
             html.Span(style={"display": "inline-block", "width": "10px",
                              "height": "10px", "borderRadius": "50%",
                              "backgroundColor": swatch, "marginRight": "6px"}),
-            html.Strong(f"{r['neighbour']} · {r['substance']} "),
+            html.Strong(f"{r['neighbour']} + {r['substance']} "),
             html.Span(f"({r['direction']} {arrow})  ",
                       className="text-muted small"),
             html.Span(f"${r['margin']:,.1f}/g margin, "
@@ -532,7 +532,7 @@ def market_arbitrage(data, filtered_prices, filtered_seizures, pool, substances,
     height = max(360, len(rows) * 26 + 130)
     fig.update_layout(
         title=(f"Top {len(rows)} cross-market arbitrage corridors across "
-               f"{n_countries} selected countries · {n_priority} priority gap(s) ⚑"),
+               f"{n_countries} selected countries | {n_priority} priority gap(s) ⚑"),
         xaxis_title="Arbitrage spread (USD/g)",
         height=height, margin=dict(l=220, r=40, t=70, b=50),
         xaxis=dict(gridcolor=theme.GRID, zeroline=True),
