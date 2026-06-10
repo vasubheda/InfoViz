@@ -23,7 +23,7 @@ def _graph(graph_id, hint=None, displaymodebar=True, figure=None, loading=True):
     if figure is not None:
         graph_kwargs["figure"] = figure
     graph = dcc.Graph(**graph_kwargs)
-    # loading=False skips the dcc.Loading overlay — used for the enforcement map,
+    # loading=False skips the dcc.Loading overlay - used for the enforcement map,
     # whose clicks only Patch the outline trace; the overlay would otherwise
     # flash a spinner over the whole map on every selection.
     children.append(_loading(graph) if loading else graph)
@@ -75,7 +75,7 @@ def build_layout(data):
                     html.Span(id="brushing-info", style={"display": "none"}),
                     html.H6("Year range", className="master-heading"),
                     # Two dropdowns (From / To) instead of a RangeSlider: every
-                    # combination — including a single year (From == To) — is
+                    # combination - including a single year (From == To) - is
                     # selectable, with none of the Dash-4 Radix-slider
                     # thumb-overlap quirks. The figures callback normalises the
                     # pair so order never matters.
@@ -281,7 +281,7 @@ def build_layout(data):
                                       style={"cursor": "help"}),
                                dbc.Tooltip(
                                    "Per country, the substance with the biggest "
-                                   "markup — left ranks by relative %, right by "
+                                   "markup - left ranks by relative %, right by "
                                    "absolute $/g. Colours match the master-panel "
                                    "substance legend; grey = no data. ▶ animates "
                                    "the selected year range; latest year shown "
@@ -304,7 +304,7 @@ def build_layout(data):
                                    id="q3-info", style={"cursor": "help"}),
                             dbc.Tooltip(
                                 "Click a single country for its land-border "
-                                "arbitrage — per neighbour and substance, the "
+                                "arbitrage - per neighbour and substance, the "
                                 "more profitable smuggling play (import / "
                                 "export). Or select multiple / all countries to "
                                 "map the best arbitrage corridor per substance "

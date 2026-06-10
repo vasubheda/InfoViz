@@ -42,7 +42,7 @@ def register(app, data):
             selection["country"], selection["countries"] = None, countries
         return selection
 
-    # MASTER PANEL — split into three independent callbacks so each element only
+    # MASTER PANEL - split into three independent callbacks so each element only
     # rebuilds on the inputs it actually depends on (and never on detail-tabs'
     # active_tab):
     #   • the Regions & countries map  -> country selection only
@@ -167,7 +167,7 @@ def register(app, data):
             sr_seiz, sr_price, sr_purity = subregion.subregion_trends(
                 data, f_seiz, sr_comb_outer, year_range[0] == year_range[1])
 
-        # TEMPORAL TAB — animated map of one metric for one substance. The full
+        # TEMPORAL TAB - animated map of one metric for one substance. The full
         # continent is always drawn (grey base); a country subset just restricts
         # which countries are coloured AND the colour scale's min-max, so the
         # user can exclude outliers and rescale by deselecting them.
@@ -294,7 +294,7 @@ def _lag_limitations(data):
 
 def _kpi(seiz, prices):
     # A single compact total-seizures indicator, shown in the master panel.
-    # (The old two-card KPI row — total seizures + countries — was dropped from
+    # (The old two-card KPI row - total seizures + countries - was dropped from
     # the Overview tab; the country count is already surfaced beside the map.)
     total_t = seiz["Kilograms"].sum() / 1000 if len(seiz) else 0
     # Match the master-panel section headings (e.g. "YEAR RANGE").

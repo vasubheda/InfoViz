@@ -74,7 +74,7 @@ def _build_combined_outer(prices, purity, seizures) -> pd.DataFrame:
     Mirrors the pipeline's inner-joined `build_combined` but joins with
     how='outer', so a substance present in only some sources (e.g. Amphetamines:
     price + purity, no seizures) keeps its rows. Metrics absent for a given
-    (Country, Substance, Year) stay NaN — the time-series draws a gap there,
+    (Country, Substance, Year) stay NaN - the time-series draws a gap there,
     not a misleading zero. Imputation flags default to False where missing.
     """
     price_avg = (prices.groupby(["Country", "Substance", "Year"])

@@ -16,7 +16,7 @@ METRICS = [
 
 @memoize_figure()
 def timeseries_single(data, filtered_combined, selection, metric_index, height=260):
-    """Animated line chart for one metric — lines draw left-to-right year by year.
+    """Animated line chart for one metric - lines draw left-to-right year by year.
 
     Each Plotly frame reveals one additional year so the built-in Play button
     progressively draws the lines. The final frame (all years visible) is also
@@ -58,7 +58,7 @@ def timeseries_single(data, filtered_combined, selection, metric_index, height=2
     # Initial state: all years visible (so the chart looks complete on load)
     initial_traces = traces_for_years(years)
 
-    # One frame per year — each reveals one more year cumulatively
+    # One frame per year - each reveals one more year cumulatively
     frames = [
         go.Frame(data=traces_for_years(years[:i + 1]), name=str(y))
         for i, y in enumerate(years)

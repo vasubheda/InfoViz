@@ -127,7 +127,7 @@ def temporal_maps(data, metric, substance, year_range, countries=None, height=52
 
     Returns two side-by-side maps (retail | wholesale) for price/purity, or a
     single full-width map for seizures. The colour scale is fixed to the
-    *displayed* selection's min-max so every panel and frame are comparable —
+    *displayed* selection's min-max so every panel and frame are comparable -
     and so that restricting `countries` (a subset selected on the master map)
     rescales the colours, letting the user exclude outliers. The full continent
     is always drawn as a grey base regardless of the subset.
@@ -137,7 +137,7 @@ def temporal_maps(data, metric, substance, year_range, countries=None, height=52
     cfg = _METRICS.get(metric or "purity", _METRICS["purity"])
 
     df = getattr(data, cfg["table"])
-    # Purity in % only — mg/tablet potency is a different scale.
+    # Purity in % only - mg/tablet potency is a different scale.
     if metric == "purity":
         df = df[df["Measurement"].astype(str).str.contains("percent", case=False,
                                                             na=False)]
@@ -145,7 +145,7 @@ def temporal_maps(data, metric, substance, year_range, countries=None, height=52
     df = df[df["Year"].between(year_range[0], year_range[1])]
     df = df[df["Country"].isin(set(data.europe_gdf["NAME"]))]
     # A country subset (from the master map) restricts which countries are
-    # coloured and, in turn, the colour-scale min-max below — so deselecting an
+    # coloured and, in turn, the colour-scale min-max below - so deselecting an
     # outlier country rescales the remaining values.
     if countries:
         df = df[df["Country"].isin(set(countries))]
@@ -198,7 +198,7 @@ def temporal_maps(data, metric, substance, year_range, countries=None, height=52
 
     default_year = years[-1]   # latest year on load
     # Trace order per panel: grey base, then the coloured data layer. The data
-    # layers are at odd indices (1, 3, ...) — frames update only those.
+    # layers are at odd indices (1, 3, ...) - frames update only those.
     initial, data_idx = [], []
     for i, (panel, geo) in enumerate(zip(panels, geos)):
         initial.append(base(geo))

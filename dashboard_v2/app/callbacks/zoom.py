@@ -28,7 +28,7 @@ def register(app, data):
         # The base choropleth carries hovertext (country NAME) and is the normal
         # path. The selection-outline overlay carries none, so fall back to its
         # `location`: that overlay is keyed by country NAME, while the base trace
-        # is keyed by the europe_gdf row index — so map an int index back to a
+        # is keyed by the europe_gdf row index - so map an int index back to a
         # name and pass a NAME straight through.
         name = pt.get("hovertext")
         if name:

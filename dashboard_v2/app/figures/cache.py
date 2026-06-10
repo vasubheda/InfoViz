@@ -50,7 +50,7 @@ def _token(arg):
         hash(arg)
         return arg
     except TypeError:
-        # AppData singleton, GeoDataFrame, etc. — constant for the process.
+        # AppData singleton, GeoDataFrame, etc. - constant for the process.
         return ("id", id(arg))
 
 

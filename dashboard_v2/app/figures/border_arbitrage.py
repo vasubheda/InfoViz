@@ -310,7 +310,7 @@ def priority_gap_list(data, filtered_prices, filtered_seizures, country, substan
                   key=lambda r: r["margin"], reverse=True)
     if not gaps:
         return html.Small(
-            "No priority gaps for the current filters — every high-margin "
+            "No priority gaps for the current filters - every high-margin "
             "corridor here already carries comparatively high seizures.",
             className="text-muted")
 
@@ -354,7 +354,7 @@ def _market_rows(filtered_prices, filtered_seizures, pool, substances, cap=None)
     corridor seizure pressure, priority flag, hover string) ranked
     strongest-first; ``cap`` (e.g. ``_MARKET_TOP_N``) truncates to that many,
     ``None`` keeps all. Each substance's single best corridor is tagged
-    ``r["is_best"]`` (those are what the flow map draws) — note the cap can drop
+    ``r["is_best"]`` (those are what the flow map draws) - note the cap can drop
     a low-spread substance's best corridor, so the flow map passes ``cap=None``.
     Shared by the flow map, the bar chart, and the gap list.
     """
@@ -493,8 +493,8 @@ def market_arbitrage(data, filtered_prices, filtered_seizures, pool, substances,
     Used when multiple/all countries are selected (no single anchor): one bar
     per (substance, origin → destination) corridor, ranked by spread and capped
     at the top ``cap`` (defaults to 25). Bars whose corridor is
-    the best for its substance — i.e. the ones drawn as arrows on the flow map
-    above — carry a ▸ marker. Same visual language as the single-country chart
+    the best for its substance - i.e. the ones drawn as arrows on the flow map
+    above - carry a ▸ marker. Same visual language as the single-country chart
     (hue = substance, opacity = corridor seizure pressure, ⚑ outline = priority
     gap).
     """
@@ -569,7 +569,7 @@ def market_gap_list(data, filtered_prices, filtered_seizures, pool, substances,
     gaps = [r for r in rows if r["priority"]]
     if not gaps:
         return html.Small(
-            "No priority gaps for the current selection — every high-margin "
+            "No priority gaps for the current selection - every high-margin "
             "spread here already carries comparatively high seizures.",
             className="text-muted")
 
@@ -596,7 +596,7 @@ def market_gap_list(data, filtered_prices, filtered_seizures, pool, substances,
         dbc.Tooltip(
             "A corridor is flagged when its arbitrage spread is in the top "
             "third of all shown corridors AND its combined seizures (origin + "
-            "destination) are in the bottom third — i.e. high profit, low "
+            "destination) are in the bottom third - i.e. high profit, low "
             "enforcement. Thresholds are recomputed for the current selection.",
             target="q3-gaps-info", placement="bottom"),
         html.Ul(items, className="mt-2 mb-0"),

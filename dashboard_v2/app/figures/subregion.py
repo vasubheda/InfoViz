@@ -3,7 +3,7 @@
 The KPI bars and the substance time-series above colour by *substance*; this row
 recolours the same three core metrics (seizures, price, purity) by *subregion*,
 so the three subregion colours (see theme.subregion_color_map) recur across the
-whole row — which is what justifies having a dedicated subregion palette.
+whole row - which is what justifies having a dedicated subregion palette.
 
 When a year *range* is selected each chart is a line per subregion; when a single
 year is selected there is no trend to draw, so each falls back to a grouped bar

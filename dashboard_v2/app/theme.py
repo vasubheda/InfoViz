@@ -37,7 +37,7 @@ def subregion_color_map(subregions) -> dict:
     subregion colours never collide with substance colours (which use the head;
     see substance_color_map). The 6 displayed substances claim slots 0-5,
     leaving #CC6677/#882255/#AA4499/#DDDDDD free. #DDDDDD (pale grey) is dropped
-    — as a region fill it reads like 'no data' — so subregions take the rose /
+    - as a region fill it reads like 'no data' - so subregions take the rose /
     maroon / purple, all distinct from every substance."""
     tail = [c for c in reversed(TOL_MUTED) if c != "#DDDDDD"]
     return {sr: tail[i % len(tail)] for i, sr in enumerate(sorted(subregions))}

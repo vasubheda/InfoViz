@@ -44,7 +44,7 @@ def _interpolate_within_groups(df: pd.DataFrame, cols: list[str],
     """Linear-interpolate ``cols`` over Year within each ``group``, internal
     gaps only. Sorting the whole frame by (group, Year) up front lets us use a
     groupby ``transform`` (index-aligned, per-group, in Year order) instead of
-    a ``groupby.apply`` — the latter's ``include_groups`` arg was removed in
+    a ``groupby.apply`` - the latter's ``include_groups`` arg was removed in
     pandas 3.0.
     """
     df = df.sort_values(group + ["Year"]).reset_index(drop=True)

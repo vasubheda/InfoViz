@@ -42,7 +42,7 @@ def enforcement_map(data, selection):
     Interaction (wired in callbacks/zoom.py): clicking a country toggles that
     country in the global country filter; clicking a subregion in the legend
     toggles the whole region. Currently-selected countries are outlined. This
-    is a pure region/country selector — it depends only on the country
+    is a pure region/country selector - it depends only on the country
     selection, never on the active substance/year, so changing those filters
     does not rebuild it.
     """
@@ -71,7 +71,7 @@ def enforcement_map(data, selection):
     # Outline currently-selected countries with a single overlay trace, always
     # present (even when empty) and keyed by country NAME over the full-Europe
     # geojson. This lets the selection callback patch ONLY this trace's
-    # locations/z on a click — Plotly then just redraws the outline instead of
+    # locations/z on a click - Plotly then just redraws the outline instead of
     # rebuilding the whole choropleth. It is added last so the base subregion
     # traces keep the legend indices the toggle callback relies on; its index is
     # `enforcement_outline_index(data)`.
@@ -88,7 +88,7 @@ def enforcement_map(data, selection):
         marker_line_color="#111", marker_line_width=2.5, hoverinfo="none"))
 
     # clickmode="event" (not "event+select"): clicks still fire clickData so the
-    # outline patch runs, but Plotly applies NO selection styling — without this
+    # outline patch runs, but Plotly applies NO selection styling - without this
     # a click dims every other country and only the last-clicked one shows.
     return helpers.base_geo_layout(fig, right_margin=10, clickmode="event")
 
@@ -100,7 +100,7 @@ _MARGIN_SIMPLIFY_TOL = 0.2
 
 def _margin_winners(prices, substances, selection):
     """Per (Country, Year), the substance with the highest retail–wholesale
-    markup — computed twice, once ranked by relative % and once by absolute $/g.
+    markup - computed twice, once ranked by relative % and once by absolute $/g.
 
     Margins are recomputed per year from `prices` (the `inland_margin` artifact
     is collapsed across years and so can't drive an animation). Returns a long
@@ -215,7 +215,7 @@ def margin_highlights(data, selection, substances=None, year_range=None):
 def margin_map(data, selection, substances=None, year_range=None, height=520):
     """Q2: per country, the substance with the highest retail-vs-wholesale markup.
 
-    Two side-by-side animated choropleths — ranked by relative % (left) and by
+    Two side-by-side animated choropleths - ranked by relative % (left) and by
     absolute $/g (right). Countries are coloured by the *winning* substance,
     reusing the master-panel substance palette (no separate legend); the full
     continent is always drawn (grey base) so countries with no winner read as
