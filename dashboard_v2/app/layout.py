@@ -2,6 +2,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 
 from .components.stores import make_stores
+from .components.data_quality import data_quality_modal
 from .figures.maps import enforcement_map
 
 
@@ -99,6 +100,10 @@ def build_layout(data):
                              className="d-flex flex-wrap mb-2"),
                     # total-seizures indicator
                     loading(html.Div(id="kpi-panel", className="mt-3")),
+                    # explain how missing data is imputed
+                    dbc.Button("ⓘ How is missing data handled?",
+                               id="data-quality-btn", color="link", size="sm",
+                               className="ps-0 mt-2"),
                 ]),
             ], id="master-card"), id="master-col", md=4,
                 style={"position": "sticky", "top": "1rem",
@@ -169,7 +174,9 @@ def build_layout(data):
                                    "(right); seizures show a single total. Playbutton "
                                    "animates the selected year range (latest "
                                    "year shown by default). Grey = no data for "
-                                   "the metric/substance/year. Purity is "
+                                   "the metric/substance/year. An open circle "
+                                   "(○) marks a country whose value is estimated "
+                                   "(imputed). Purity is "
                                    "%-measured only (mg/tablet excluded).",
                                    target="temporal-info", placement="bottom")],
                               [dbc.Row([
@@ -314,6 +321,8 @@ def build_layout(data):
         ], className="g-3 mb-4"),
 
         *make_stores(),
+
+        data_quality_modal(data),
 
         # fixed attribution bar at the bottom
         html.Div(

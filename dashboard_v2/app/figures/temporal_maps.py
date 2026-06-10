@@ -116,9 +116,17 @@ def temporal_maps(data, metric, substance, year_range, countries=None, height=52
     # seizures are kg, map shows tonnes
     scale = 0.001 if metric == "seizures" else 1.0
 
+    # carry the imputed flag so we can mark estimated values on the map; a
+    # country-year is flagged if any contributing row was imputed
+    imp_col = cfg["value"] + "_is_imputed"
+    has_imp = imp_col in df.columns
     group_cols = (["LevelOfSale", "Country", "Year"] if cfg["split"]
                   else ["Country", "Year"])
-    agg = (df.groupby(group_cols)[cfg["value"]].agg(cfg["agg"]) * scale).reset_index()
+    named = {cfg["value"]: (cfg["value"], cfg["agg"])}
+    if has_imp:
+        named["imp"] = (imp_col, "max")
+    agg = df.groupby(group_cols).agg(**named).reset_index()
+    agg[cfg["value"]] = agg[cfg["value"]] * scale
 
     lo, hi = float(agg[cfg["value"]].min()), float(agg[cfg["value"]].max())
     years = sorted(agg["Year"].unique())
@@ -127,6 +135,10 @@ def temporal_maps(data, metric, substance, year_range, countries=None, height=52
     gdf["geometry"] = gdf["geometry"].simplify(_SIMPLIFY_TOL, preserve_topology=True)
     geojson = gdf.__geo_interface__
     all_countries = list(gdf["NAME"])
+    # centroids for the open-circle overlay marking imputed country-years
+    centroids = gdf.set_index("NAME").geometry.representative_point()
+    cx = centroids.x.to_dict()
+    cy = centroids.y.to_dict()
 
     panels = _LEVELS if cfg["split"] else [None]
     geos = ["geo", "geo2"][:len(panels)]
@@ -138,29 +150,55 @@ def temporal_maps(data, metric, substance, year_range, countries=None, height=52
             colorscale=[[0, _NO_DATA], [1, _NO_DATA]], geo=geo,
             marker_line_color="white", marker_line_width=0.4)
 
-    def layer(panel, year, geo):
+    def panel_slice(panel, year):
         d = agg[agg["Year"] == year]
         if panel is not None:
             d = d[d["LevelOfSale"] == panel]
+        return d
+
+    def layer(panel, year, geo):
+        d = panel_slice(panel, year)
         return go.Choropleth(
             geojson=geojson, featureidkey="properties.NAME",
             locations=d["Country"], z=d[cfg["value"]], coloraxis="coloraxis",
             geo=geo, marker_line_color="white", marker_line_width=0.4,
             hovertemplate=f"<b>%{{location}}</b><br>{cfg['hover']}<extra></extra>")
 
+    # open-circle overlay over countries whose value is imputed (estimated)
+    def overlay(panel, year, geo):
+        d = panel_slice(panel, year)
+        if has_imp:
+            d = d[d["imp"].fillna(False)]
+        else:
+            d = d.iloc[:0]
+        d = d[d["Country"].isin(cx)]
+        return go.Scattergeo(
+            geo=geo, lon=[cx[c] for c in d["Country"]],
+            lat=[cy[c] for c in d["Country"]],
+            mode="markers", showlegend=False, hoverinfo="skip",
+            marker=dict(symbol="circle-open", size=8, color="#222",
+                        line=dict(width=1.5, color="#222")))
+
     default_year = years[-1]
-    # data layers sit at odd indices, frames update only those
+    # per panel: base (static) + value layer + imputed overlay; frames update
+    # the value layer and the overlay, the base stays put
     initial, data_idx = [], []
     for i, (panel, geo) in enumerate(zip(panels, geos)):
         initial.append(base(geo))
         initial.append(layer(panel, default_year, geo))
-        data_idx.append(2 * i + 1)
+        initial.append(overlay(panel, default_year, geo))
+        data_idx.extend([3 * i + 1, 3 * i + 2])
+
+    def frame_traces(year):
+        out = []
+        for panel, geo in zip(panels, geos):
+            out.append(layer(panel, year, geo))
+            out.append(overlay(panel, year, geo))
+        return out
+
     fig = go.Figure(
         data=initial,
-        frames=[go.Frame(name=str(y),
-                         data=[layer(panel, y, geo)
-                               for panel, geo in zip(panels, geos)],
-                         traces=data_idx)
+        frames=[go.Frame(name=str(y), data=frame_traces(y), traces=data_idx)
                 for y in years])
 
     geo_common = dict(visible=False, projection_type="mercator",

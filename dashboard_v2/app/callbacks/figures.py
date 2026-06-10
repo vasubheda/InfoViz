@@ -46,6 +46,16 @@ def register(app, data):
         patch["data"][_outline_idx]["z"] = [1] * len(selected)
         return patch
 
+    # data-quality explainer modal
+    @app.callback(
+        Output("data-quality-modal", "is_open"),
+        Input("data-quality-btn", "n_clicks"),
+        State("data-quality-modal", "is_open"),
+        prevent_initial_call=True,
+    )
+    def toggle_data_quality(n_clicks, is_open):
+        return not is_open
+
     # substance legend, driven only by the active substance set
     @app.callback(
         Output("substance-legend", "children"),

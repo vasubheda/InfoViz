@@ -38,12 +38,19 @@ def timeseries_single(data, filtered_combined, selection, metric_index, height=2
             color = cmap.get(substance, theme.TOL_MUTED[0])
             g = grouped[(grouped["Substance"] == substance)
                         & (grouped["Year"].isin(up_to_years))].sort_values("Year")
+            # hollow markers flag imputed (estimated) points; the outline keeps
+            # the substance colour, the fill drops to white when imputed
+            imp = g["imp"].tolist()
+            fill = ["white" if i else color for i in imp]
+            note = [" · imputed (estimated)" if i else "" for i in imp]
             traces.append(go.Scatter(
                 x=g["Year"], y=g["Value"], mode="lines+markers", name=substance,
                 legendgroup=substance,
                 line=dict(width=2, color=color),
-                marker=dict(size=7, line=dict(width=2, color="white"), color=color),
-                hovertemplate=f"{y_label}: %{{y:.2f}}<extra>{substance}</extra>"))
+                marker=dict(size=7, line=dict(width=2, color=color), color=fill),
+                customdata=note,
+                hovertemplate=f"{y_label}: %{{y:.2f}}%{{customdata}}"
+                              f"<extra>{substance}</extra>"))
         return traces
 
     # start with all years shown
