@@ -67,21 +67,21 @@
     border-color: #495057;
 }
 
-/*  "corridors to show" slider: same heading gray as the total-seizures card
-   and the year slider above. */
-#q3-top-n .dash-slider-range {
+/* Cross-border year slider: same heading gray (#495057) as the loading
+   overlay and the master-panel year dropdowns. */
+#q3-year .dash-slider-range {
     background-color: #495057;
 }
-#q3-top-n .dash-slider-thumb {
+#q3-year .dash-slider-thumb {
     border-color: #495057;
     background-color: #495057;
 }
-#q3-top-n .dash-slider-thumb:hover,
-#q3-top-n .dash-slider-thumb:active,
-#q3-top-n .dash-slider-thumb:focus {
+#q3-year .dash-slider-thumb:hover,
+#q3-year .dash-slider-thumb:active,
+#q3-year .dash-slider-thumb:focus {
     border-color: #495057;
     box-shadow: 0 0 0 5px rgba(73, 80, 87, 0.2);
 }
-#q3-top-n .dash-slider-dot:not(.dash-slider-dot-outside-selection) {
+#q3-year .dash-slider-dot:not(.dash-slider-dot-outside-selection) {
     border-color: #495057;
 }

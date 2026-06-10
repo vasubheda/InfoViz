@@ -156,7 +156,7 @@ def _compute_rows(data, filtered_prices, filtered_seizures, country, substances)
 
     Returns ``None`` (no country selected), ``"no_neigh"`` (no priced
     neighbours), or a list of row dicts each carrying the best margin, signed
-    x-position, corridor seizure tonnage, opacity (inverse to pressure),
+    x-position, corridor seizure tonnage (used only for the priority-gap flag),
     priority flag, and a hover string. Shared by the chart and the gap list so
     both apply identical thresholds.
     """
@@ -207,20 +207,17 @@ def _compute_rows(data, filtered_prices, filtered_seizures, country, substances)
     if not rows:
         return rows
 
-    # Opacity inverse to corridor seizure pressure; priority = high margin
-    # (top tercile) AND low seizures (bottom tercile).
+    # Priority = high margin (top tercile) AND low seizures (bottom tercile).
+    # Seizure pressure is no longer encoded in bar opacity or shown in the hover
+    # - it only feeds the priority-gap flag.
     pressures = [r["corridor_t"] for r in rows]
-    p_min, p_span = min(pressures), (max(pressures) - min(pressures)) or 1.0
     _, margin_hi = _tercile_thresholds([r["margin"] for r in rows])
     seiz_lo, _ = _tercile_thresholds(pressures)
     for r in rows:
-        norm = (r["corridor_t"] - p_min) / p_span     # 0 = lightly policed
-        r["alpha"] = 1.0 - 0.7 * norm                 # 1.0 .. 0.3
         r["priority"] = r["margin"] >= margin_hi and r["corridor_t"] <= seiz_lo
         r["hover"] = (
             f"<b>{r['label']}</b><br>{r['direction'].title()} play: "
             f"{r['buy']} → {r['sell']}<br>Margin: ${r['margin']:,.2f}/g"
-            f"<br>Corridor seizures: {r['corridor_t']:,.1f} t"
             + ("<br><b>⚑ Priority gap: high margin, low seizures</b>"
                if r["priority"] else "")
             + "<extra></extra>")
@@ -232,9 +229,7 @@ def border_arbitrage(data, filtered_prices, filtered_seizures, country, substanc
     """Diverging per-(neighbour, substance) best-arbitrage bars for ``country``.
 
     Bar length = best smuggling margin; direction = import (left) / export
-    (right). Bar opacity is inverse to *corridor seizure pressure* (the tonnage
-    seized across the two countries for that substance): bold bars are high
-    margin AND lightly policed - the priority gaps for border control.
+    (right). Priority gaps (high margin AND low seizures) are outlined with ⚑.
     """
     rows = _compute_rows(data, filtered_prices, filtered_seizures,
                          country, substances)
@@ -252,9 +247,9 @@ def border_arbitrage(data, filtered_prices, filtered_seizures, country, substanc
 
     # Sort by absolute opportunity so the strongest borders are most prominent.
     rows.sort(key=lambda r: r["margin"])
-    marker_colors = [_hex_to_rgba(
-        data.substance_color_map.get(r["substance"], theme.TOL_MUTED[0]),
-        r["alpha"]) for r in rows]
+    marker_colors = [
+        data.substance_color_map.get(r["substance"], theme.TOL_MUTED[0])
+        for r in rows]
 
     fig = go.Figure(go.Bar(
         x=[r["signed"] for r in rows],
@@ -272,21 +267,21 @@ def border_arbitrage(data, filtered_prices, filtered_seizures, country, substanc
     n_priority = sum(r["priority"] for r in rows)
     height = max(360, len(rows) * 22 + 130)
     fig.update_layout(
-        title=(f"Best cross-border arbitrage at {country}'s land borders "
-               f"(wholesale → retail)"),
+        title=dict(text=(
+            f"Best cross-border arbitrage at {country}'s land borders "
+            f"(wholesale → retail)"), y=0.97, yanchor="top"),
         xaxis_title=f"◀ Import into {country}   (best margin, USD/g)   "
-                    f"Export from {country} Playbutton",
-        height=height, margin=dict(l=180, r=40, t=70, b=50),
+                    f"Export from {country} ▶",
+        height=height + 28, margin=dict(l=180, r=40, t=104, b=50),
         xaxis=dict(gridcolor=theme.GRID, zeroline=True),
         yaxis=dict(gridcolor=theme.GRID, tickfont=dict(size=10)),
         plot_bgcolor=theme.PLOT_BG, showlegend=False)
+    # Key, above the plot (below the title).
     fig.add_annotation(
-        xref="paper", yref="paper", x=0, y=1.02, showarrow=False,
-        font=dict(size=11, color="#555"), xanchor="left",
-        text="Opacity (not hue) carries seizure pressure: bold = "
-             "lightly-policed corridor (low seizures), faded = already under "
-             "interdiction. ⚑ outlined = high-margin priority gap. "
-             "Hue = substance.")
+        xref="paper", yref="paper", x=0, y=1.07, showarrow=False,
+        font=dict(size=11, color="#555"), xanchor="left", yanchor="top",
+        align="left",
+        text="⚑ outlined = high-margin priority gap. Hue = substance.")
     return fig
 
 
@@ -531,18 +526,24 @@ def market_arbitrage(data, filtered_prices, filtered_seizures, pool, substances,
     n_priority = sum(r["priority"] for r in rows)
     height = max(360, len(rows) * 26 + 130)
     fig.update_layout(
-        title=(f"Top {len(rows)} cross-market arbitrage corridors across "
-               f"{n_countries} selected countries | {n_priority} priority gap(s) ⚑"),
+        title=dict(text=(
+            f"Top {len(rows)} cross-market arbitrage corridors across "
+            f"{n_countries} selected countries | {n_priority} priority gap(s) ⚑"),
+            y=0.97, yanchor="top"),
         xaxis_title="Arbitrage spread (USD/g)",
-        height=height, margin=dict(l=220, r=40, t=70, b=50),
+        height=height + 40, margin=dict(l=220, r=40, t=116, b=50),
         xaxis=dict(gridcolor=theme.GRID, zeroline=True),
         yaxis=dict(gridcolor=theme.GRID, tickfont=dict(size=10)),
         plot_bgcolor=theme.PLOT_BG, showlegend=False)
+    # Key, above the plot and wrapped across two lines so it never clips at the
+    # plot's right edge (the old single line overflowed). The extra top margin
+    # gives the title + this two-line caption room.
     fig.add_annotation(
-        xref="paper", yref="paper", x=0, y=1.02, showarrow=False,
-        font=dict(size=11, color="#555"), xanchor="left",
+        xref="paper", yref="paper", x=0, y=1.07, showarrow=False,
+        font=dict(size=11, color="#555"), xanchor="left", yanchor="top",
+        align="left",
         text="Each corridor: buy wholesale at the origin, sell retail at the "
-             "destination. ▸ = drawn on the map above (best per substance). "
+             "destination. ▸ = drawn on the map above (best per substance).<br>"
              "Opacity = corridor seizure pressure (bold = lightly policed); "
              "⚑ = high-margin priority gap. Hue = substance.")
     return fig
