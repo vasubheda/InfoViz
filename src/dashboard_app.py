@@ -13,6 +13,9 @@ import geopandas as gpd
 import requests
 from datetime import datetime
 from scipy import stats
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 # ============================================================================
 # COLORBLIND-FRIENDLY COLOR CONFIGURATION
@@ -84,8 +87,11 @@ def load_and_preprocess_data():
     price_and_purity_excel_file = './data/raw/8.1_Prices_and_purities_of_drugs.xlsx'
     seizures_excel_file = './data/raw/7.1_Drug_seizures_2019-2023.xlsx'
 
+    logging.info("Loading prices data.")
     drug_prices_df = pd.read_excel(price_and_purity_excel_file, sheet_name='Prices in USD')
+    logging.info("Loading purity data.")
     drug_purity_df = pd.read_excel(price_and_purity_excel_file, sheet_name='Purities')
+    logging.info("Loading seizures data.")
     drug_seizures_df = pd.read_excel(seizures_excel_file, sheet_name='Seizures')
 
     drug_prices_df = drug_prices_df.rename(columns={'Country/Territory': 'Country'})
@@ -153,6 +159,7 @@ def load_and_preprocess_data():
     inland_margin['RelativeMargin'] = (inland_margin['Margin'] / inland_margin['Typical_USD_Wholesale']) * 100
     inland_margin = inland_margin.dropna(subset=['RelativeMargin'])
 
+    logging.info("Loading European Geo data.")
     # Load GeoJSON - cache locally for reliability
     geojson_cache = './data/europe.geojson'
     if os.path.exists(geojson_cache):
@@ -246,7 +253,10 @@ for substance in LAG_DF['Substance'].unique():
     sub = LAG_DF[LAG_DF['Substance'] == substance]
     if len(sub) >= 5:
         r, p = stats.pearsonr(sub['Kilograms'], sub['Typical_USD'])
-        LAG_CORRELATIONS.append({'Substance': substance, 'r': r, 'p': p, 'n': len(sub)})
+        fisher_z = np.arctanh(r) if abs(r) < 1 else np.nan 
+        LAG_CORRELATIONS.append({
+            'Substance': substance, 'r': r, 'fisher_z': fisher_z, 'p': p, 'n': len(sub)
+        })
 LAG_CORR_DF = pd.DataFrame(LAG_CORRELATIONS).sort_values('r')
 
 # Pre-compute drug market attractiveness composite index
@@ -269,7 +279,7 @@ ATTRACTIVENESS_DF = _attractiveness.loc[
     _attractiveness.groupby('Country')['score'].idxmax()
 ].reset_index(drop=True).sort_values('score', ascending=True)
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.FONT_AWESOME])
 server = app.server
 app.title = "European Drug Analytics Dashboard"
 
@@ -351,24 +361,47 @@ app.layout = dbc.Container([
     ]),
 
     # ========================================================================
-    # ROW 1: SUBREGION MAP + TIME SERIES
+    # ROW 1: 3 SUBREGION DATA PANELS
+    # ========================================================================
+    dbc.Row([
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.H5("Western and Central Europe Europe", className="text-muted mb-2"),
+            html.H3(id='panel-western-data', className="text-primary mb-0")
+        ]), className="shadow-sm"), md=4),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.H5("Eastern Europe", className="text-muted mb-2"),
+            html.H3(id='panel-eastern-data', className="text-success mb-0")
+        ]), className="shadow-sm"), md=4),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.H5("South-Eastern Europe", className="text-muted mb-2"),
+            html.H3(id='panel-southern-data', className="text-warning mb-0")
+        ]), className="shadow-sm"), md=4),
+    ], className="mb-4"),
+
+    # ========================================================================
+    # ROW 2: SUBREGION MAP + TIME SERIES & MARGIN (COMBINED)
     # ========================================================================
     dbc.Row([
         dbc.Col([
             dbc.Card([
-                dbc.CardHeader(html.H5("European Subregions (click to drill down)", className="mb-0")),
+                dbc.CardHeader(html.H5("European Subregions", className="mb-0")),
                 dbc.CardBody([
-                    html.Small("Click a subregion to zoom in; click a country for detail panel", className="text-muted d-block mb-1"),
-                    dcc.Graph(id='subregion-map', config={'displayModeBar': True})
-                ])
-            ])
+                    html.Span(html.I(className="fas fa-info-circle text-muted"), id="tooltip-map"),
+                    dbc.Tooltip("Click a subregion to zoom in; click a country for the detail panel.", target="tooltip-map"),
+                    dcc.Graph(
+                        id='subregion-map', 
+                        config={'displayModeBar': True},
+                        style={'height': '100%', 'minHeight': '820px'} 
+                    )
+                ], className="d-flex flex-column")
+            ], className="h-100 shadow-sm")
         ], md=6),
 
         dbc.Col([
             dbc.Card([
                 dbc.CardHeader([
                     dbc.Row([
-                        dbc.Col(html.H5("Time Series Analysis", className="mb-0"), md=5),
+                        dbc.Col(html.H5("Temporal Analysis", className="mb-0"), md=5),
                         dbc.Col([
                             dcc.Dropdown(
                                 id='timeseries-metric-selector',
@@ -377,109 +410,32 @@ app.layout = dbc.Container([
                                     {'label': 'Average Price (USD)', 'value': 'price'},
                                     {'label': 'Average Purity (%)', 'value': 'purity'}
                                 ],
-                                value='seizures',
-                                clearable=False,
-                                className="small"
+                                value='seizures', clearable=False, className="small"
                             )
-                        ], md=4),
-                        dbc.Col([
-                            dbc.Button("Play", id='play-button', color="success",
-                                       size="sm", className="mt-1")
-                        ], md=3)
+                        ], md=5),
+                        dbc.Col(dbc.Button("Play", id='play-button', color="success", size="sm"), md=2)
                     ])
                 ]),
                 dbc.CardBody([
-                    html.Small("Click a data point to filter by year", className="text-muted d-block mb-1"),
-                    dcc.Graph(id='timeseries-chart', config={'displayModeBar': True})
+                    html.Span(html.I(className="fas fa-info-circle text-muted"), id="tooltip-ts"),
+                    dbc.Tooltip("Click a data point to filter the entire dashboard by that specific year.", target="tooltip-ts"),
+                    dcc.Graph(id='timeseries-chart')
                 ])
-            ])
-        ], md=6)
-    ], className="mb-4"),
+            ], className="mb-3 shadow-sm"),
 
-    # ========================================================================
-    # ROW 2: RETAIL AND WHOLESALE HEATMAPS
-    # ========================================================================
-    dbc.Row([
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.H5("Retail Prices by Region & Substance", className="mb-0")),
-                dbc.CardBody([
-                    html.Small("Click a cell to filter by region and substance", className="text-muted d-block mb-1"),
-                    dcc.Graph(id='price-heatmap-retail', config={'displayModeBar': True})
-                ])
-            ])
-        ], md=6),
-
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.H5("Wholesale Prices by Region & Substance", className="mb-0")),
-                dbc.CardBody([
-                    html.Small("Click a cell to filter by region and substance", className="text-muted d-block mb-1"),
-                    dcc.Graph(id='price-heatmap-wholesale', config={'displayModeBar': True})
-                ])
-            ])
-        ], md=6)
-    ], className="mb-4"),
-
-    # ========================================================================
-    # ROW 3: MARGIN MAP + OPTIMAL SEIZURE MAP
-    # ========================================================================
-    dbc.Row([
-        dbc.Col([
             dbc.Card([
                 dbc.CardHeader(html.H5("Highest Profit Margins by Country", className="mb-0")),
                 dbc.CardBody([
-                    html.Small("Shows substance with highest margin per country", className="text-muted d-block mb-1"),
-                    dcc.Graph(id='margin-map', config={'displayModeBar': True})
+                    html.Span(html.I(className="fas fa-info-circle text-muted"), id="tooltip-margin"),
+                    dbc.Tooltip("Displays the specific substance yielding the highest relative profit margin per country.", target="tooltip-margin"),
+                    dcc.Graph(id='margin-map')
                 ])
-            ])
-        ], md=6),
-
-        dbc.Col([
-            dbc.Card([
-                dbc.CardHeader(html.H5("Optimal Seizure Locations", className="mb-0")),
-                dbc.CardBody([
-                    dbc.Row([
-                        dbc.Col([
-                            html.Label("Country:", className="fw-bold small"),
-                            dcc.Dropdown(
-                                id='optimal-country-selector',
-                                options=[{'label': c, 'value': c} for c in sorted(drug_prices_df['Country'].unique())],
-                                value=sorted(drug_prices_df['Country'].unique())[0],
-                                clearable=False, className="small mb-2"
-                            )
-                        ], md=4),
-                        dbc.Col([
-                            html.Label("Substance:", className="fw-bold small"),
-                            dcc.Dropdown(
-                                id='optimal-substance-selector',
-                                options=[{'label': s, 'value': s} for s in sorted(drug_seizures_df['Substance'].unique())],
-                                value=sorted(drug_seizures_df['Substance'].unique())[0],
-                                clearable=False, className="small mb-2"
-                            )
-                        ], md=4),
-                        dbc.Col([
-                            html.Label("Price Type:", className="fw-bold small"),
-                            dcc.Dropdown(
-                                id='optimal-price-type-selector',
-                                options=[
-                                    {'label': 'Retail', 'value': 'Retail'},
-                                    {'label': 'Wholesale', 'value': 'Wholesale'}
-                                ],
-                                value='Retail',
-                                clearable=False, className="small mb-2"
-                            )
-                        ], md=4)
-                    ]),
-                    html.Small("Gradient shows seizure value potential vs selected country price", className="text-muted d-block mb-1"),
-                    dcc.Graph(id='optimal-selling-map', config={'displayModeBar': True})
-                ])
-            ])
+            ], className="shadow-sm")
         ], md=6)
-    ], className="mb-4"),
+    ], className="mb-4 align-items-stretch"),
 
     # ========================================================================
-    # ROW 4: PARALLEL COORDINATES (NEW - non-standard multi-variate encoding)
+    # ROW 3: PARALLEL COORDINATES
     # ========================================================================
     dbc.Row([
         dbc.Col([
@@ -497,18 +453,15 @@ app.layout = dbc.Container([
     ], className="mb-4"),
 
     # ========================================================================
-    # ROW 5: LAG CORRELATION + CLEVELAND DOT PLOT (NEW)
+    # ROW 4: LAG CORRELATION + CLEVELAND DOT PLOT
     # ========================================================================
     dbc.Row([
         dbc.Col([
             dbc.Card([
                 dbc.CardHeader(html.H5("Seizure-to-Price Lag Correlation (1 Year)", className="mb-0")),
                 dbc.CardBody([
-                    html.Small(
-                        "Pearson r: correlation between seizure volume in year Y and street price in year Y+1. "
-                        "Positive r = more seizures preceded higher prices.",
-                        className="text-muted d-block mb-2"
-                    ),
+                    html.Span(html.I(className="fas fa-info-circle text-muted"), id="tooltip-lag"),
+                    dbc.Tooltip("Pearson r (normalized via Fisher-z): measures how seizure volume in year Y impacts street price in year Y+1. Corridor seizures (intercepting drugs in transit countries) often cause these delayed price spikes.", target="tooltip-lag"),
                     dcc.Graph(id='lag-correlation-chart', config={'displayModeBar': False})
                 ])
             ])
@@ -530,7 +483,7 @@ app.layout = dbc.Container([
     ], className="mb-4"),
 
     # ========================================================================
-    # ROW 6: CORRELATION REGRESSION
+    # ROW 5: CORRELATION REGRESSION
     # ========================================================================
     dbc.Row([
         dbc.Col([
@@ -571,7 +524,7 @@ app.layout = dbc.Container([
     ], className="mb-4"),
 
     # ========================================================================
-    # ROW 7: SCATTER PLOT MATRIX
+    # ROW 6: SCATTER PLOT MATRIX
     # ========================================================================
     dbc.Row([
         dbc.Col([
@@ -620,7 +573,6 @@ app.layout = dbc.Container([
             ], className="text-center text-muted small")
         ])
     ])
-
 ], fluid=True, style={'backgroundColor': '#f8f9fa'})
 
 
@@ -754,43 +706,41 @@ def zoom_back(_):
 # ============================================================================
 
 @app.callback(
-    [Output('subregion-map', 'figure'),
-     Output('timeseries-chart', 'figure'),
-     Output('price-heatmap-retail', 'figure'),
-     Output('price-heatmap-wholesale', 'figure'),
-     Output('margin-map', 'figure'),
-     Output('optimal-selling-map', 'figure'),
-     Output('parcoords-plot', 'figure'),
-     Output('lag-correlation-chart', 'figure'),
-     Output('attractiveness-chart', 'figure'),
-     Output('correlation-regression', 'figure'),
-     Output('correlation-stats', 'children'),
-     Output('correlation-scatter', 'figure'),
-     Output('statistics-panel', 'children'),
-     Output('brushing-info', 'children')],
-    [Input('substance-filter', 'value'),
-     Input('year-slider', 'value'),
-     Input('timeseries-metric-selector', 'value'),
-     Input('optimal-country-selector', 'value'),
-     Input('optimal-substance-selector', 'value'),
-     Input('optimal-price-type-selector', 'value'),
-     Input('x-axis-dropdown', 'value'),
-     Input('y-axis-dropdown', 'value'),
-     Input('subregion-map', 'clickData'),
-     Input('timeseries-chart', 'clickData'),
-     Input('price-heatmap-retail', 'clickData'),
-     Input('price-heatmap-wholesale', 'clickData'),
-     Input('margin-map', 'clickData'),
-     Input('correlation-scatter', 'selectedData'),
-     Input('reset-button', 'n_clicks'),
-     Input('zoom-level', 'data'),
-     Input('zoom-subregion', 'data'),
-     Input('animation-year', 'data')]
+    [
+        Output('subregion-map', 'figure'),
+        Output('timeseries-chart', 'figure'),
+        Output('margin-map', 'figure'),
+        Output('parcoords-plot', 'figure'),
+        Output('lag-correlation-chart', 'figure'),
+        Output('attractiveness-chart', 'figure'),
+        Output('correlation-regression', 'figure'),
+        Output('correlation-stats', 'children'),
+        Output('correlation-scatter', 'figure'),
+        Output('statistics-panel', 'children'),
+        Output('brushing-info', 'children'),
+        Output('panel-western-data', 'children'),
+        Output('panel-eastern-data', 'children'),
+        Output('panel-southern-data', 'children')
+    ],
+    [
+        Input('substance-filter', 'value'),
+        Input('year-slider', 'value'),
+        Input('timeseries-metric-selector', 'value'),
+        Input('x-axis-dropdown', 'value'),
+        Input('y-axis-dropdown', 'value'),
+        Input('subregion-map', 'clickData'),
+        Input('timeseries-chart', 'clickData'),
+        Input('margin-map', 'clickData'),
+        Input('correlation-scatter', 'selectedData'),
+        Input('reset-button', 'n_clicks'),
+        Input('zoom-level', 'data'),
+        Input('zoom-subregion', 'data'),
+        Input('animation-year', 'data')
+    ]
 )
 def update_dashboard(selected_substances, year_range, timeseries_metric,
-                     optimal_country, optimal_substance, optimal_price_type, x_axis, y_axis,
-                     subregion_click, timeseries_click, heatmap_retail_click,
-                     heatmap_wholesale_click, margin_click, scatter_selection, reset_clicks,
+                     x_axis, y_axis, subregion_click, timeseries_click, 
+                     margin_click, scatter_selection, reset_clicks, 
                      zoom_level, zoom_subregion, animation_year):
 
     triggered_id = ctx.triggered_id
@@ -805,8 +755,8 @@ def update_dashboard(selected_substances, year_range, timeseries_metric,
     brushing_info_text = "No selection active. Click on any visualization to filter others."
 
     if triggered_id == 'reset-button':
-        subregion_click = timeseries_click = heatmap_retail_click = None
-        heatmap_wholesale_click = margin_click = scatter_selection = None
+        logging.info("Resetting selections.")
+        subregion_click = timeseries_click = margin_click = scatter_selection = None
         brushing_info_text = "Selection cleared."
 
     elif subregion_click and triggered_id == 'subregion-map':
@@ -835,17 +785,6 @@ def update_dashboard(selected_substances, year_range, timeseries_metric,
                 brushing_info_text += f" — {selected_substance_brush}"
         except (KeyError, IndexError, TypeError):
             pass
-
-    elif triggered_id in ('price-heatmap-retail', 'price-heatmap-wholesale'):
-        click_data = heatmap_retail_click if triggered_id == 'price-heatmap-retail' else heatmap_wholesale_click
-        if click_data:
-            try:
-                selected_region = click_data['points'][0].get('y')
-                selected_substance_brush = click_data['points'][0].get('x')
-                price_type = "Retail" if triggered_id == 'price-heatmap-retail' else "Wholesale"
-                brushing_info_text = f"{price_type} — {selected_region}, {selected_substance_brush}"
-            except (KeyError, IndexError, TypeError):
-                pass
 
     elif scatter_selection and triggered_id == 'correlation-scatter':
         try:
@@ -1020,45 +959,6 @@ def update_dashboard(selected_substances, year_range, timeseries_metric,
         timeseries_fig = _empty_fig("No data for selected filters")
 
     # ========================================================================
-    # 3. PRICE HEATMAPS
-    # ========================================================================
-    def create_price_heatmap(price_level):
-        if len(filtered_prices) == 0:
-            return _empty_fig("No data available")
-        latest_year = filtered_prices['Year'].max()
-        data = filtered_prices[
-            (filtered_prices['Year'] == latest_year) &
-            (filtered_prices['LevelOfSale'] == price_level)
-        ].copy()
-        if len(data) == 0:
-            return _empty_fig("No data available")
-        data['SubRegion'] = data['SubRegion'].str.replace(' Europe', '')
-        hm = data.pivot_table(values='Typical_USD', index='SubRegion', columns='Substance', aggfunc='mean')
-        fig = go.Figure(data=go.Heatmap(
-            z=hm.values, x=hm.columns, y=hm.index,
-            colorscale=COLORBLIND_CONTINUOUS, hoverongaps=False,
-            colorbar=dict(title="Price<br>(USD)", titleside="right", thickness=15, len=0.7, x=1.15),
-            hovertemplate='Region: %{y}<br>Substance: %{x}<br>Price: $%{z:.2f}<extra></extra>'
-        ))
-        if selected_region and selected_substance_brush:
-            region_short = selected_region.replace(' Europe', '')
-            if region_short in hm.index and selected_substance_brush in hm.columns:
-                ri = list(hm.index).index(region_short)
-                ci = list(hm.columns).index(selected_substance_brush)
-                fig.add_shape(type="rect", x0=ci-0.5, x1=ci+0.5, y0=ri-0.5, y1=ri+0.5,
-                              line=dict(color="#D55E00", width=4))
-        fig.update_layout(
-            title=f"{price_level} Prices ({latest_year})",
-            xaxis_title="Substance", yaxis_title="European Region",
-            height=400, xaxis=dict(side='bottom'), plot_bgcolor='white',
-            margin=dict(l=100, r=150, t=50, b=50)
-        )
-        return fig
-
-    heatmap_retail_fig = create_price_heatmap('Retail')
-    heatmap_wholesale_fig = create_price_heatmap('Wholesale')
-
-    # ========================================================================
     # 4. MARGIN MAP
     # ========================================================================
     filtered_margin = inland_margin[
@@ -1095,46 +995,6 @@ def update_dashboard(selected_substances, year_range, timeseries_metric,
                     xanchor="left", x=1.02, bgcolor="rgba(255,255,255,0.9)",
                     bordercolor="#333", borderwidth=1)
     )
-
-    # ========================================================================
-    # 5. OPTIMAL SEIZURE MAP
-    # ========================================================================
-    if optimal_country and optimal_substance and len(filtered_prices) > 0:
-        source_data = filtered_prices[
-            (filtered_prices['Country'] == optimal_country) &
-            (filtered_prices['Substance'] == optimal_substance) &
-            (filtered_prices['LevelOfSale'] == optimal_price_type)
-        ]
-        if len(source_data) > 0:
-            source_avg = source_data['Typical_USD'].mean()
-            target = filtered_prices[
-                (filtered_prices['LevelOfSale'] == optimal_price_type) &
-                (filtered_prices['Substance'] == optimal_substance)
-            ].groupby('Country')['Typical_USD'].mean().reset_index()
-            target['PriceDifference'] = target['Typical_USD'] - source_avg
-            map_opt = europe_gdf.merge(target, how='left', left_on='NAME', right_on='Country')
-            valid_opt = map_opt.dropna(subset=['PriceDifference'])
-            if len(valid_opt) > 0:
-                optimal_fig = px.choropleth(
-                    valid_opt, geojson=valid_opt.geometry.__geo_interface__,
-                    locations=valid_opt.index, color='PriceDifference',
-                    hover_name='NAME', hover_data={'PriceDifference': ':.2f', 'Typical_USD': ':.2f'},
-                    color_continuous_scale='RdYlGn',
-                    title=f"Seizure Value Potential: {optimal_substance} from {optimal_country}",
-                    labels={'PriceDifference': 'Value Diff (USD)'}
-                )
-                optimal_fig.update_layout(
-                    coloraxis_colorbar=dict(title="Seizure<br>Value", thickness=15, len=0.7, x=1.15)
-                )
-            else:
-                optimal_fig = _empty_fig("No data available")
-        else:
-            optimal_fig = _empty_fig(f"No {optimal_price_type.lower()} data for {optimal_substance} in {optimal_country}")
-    else:
-        optimal_fig = _empty_fig("Select a country and substance")
-
-    optimal_fig.update_geos(fitbounds="locations", visible=False, projection_type="mercator")
-    optimal_fig.update_layout(margin=dict(l=0, r=150, t=30, b=0), height=400)
 
     # ========================================================================
     # 6. PARALLEL COORDINATES (new non-standard encoding)
@@ -1242,7 +1102,7 @@ def update_dashboard(selected_substances, year_range, timeseries_metric,
         lag_fig.update_layout(
             title="* = p < 0.05",
             xaxis_title="Pearson r (seizures Y → price Y+1)",
-            height=300,
+            height=max(300, len(LAG_CORR_DF) * 25),
             margin=dict(l=140, r=40, t=40, b=40),
             xaxis=dict(range=[-1, 1], gridcolor='rgba(128,128,128,0.2)', zeroline=True),
             yaxis=dict(gridcolor='rgba(128,128,128,0.2)'),
@@ -1429,9 +1289,20 @@ def update_dashboard(selected_substances, year_range, timeseries_metric,
         ]), className="text-center", style={'border-left': '4px solid #CC79A7'}), md=3)
     ])
 
-    return (subregion_fig, timeseries_fig, heatmap_retail_fig, heatmap_wholesale_fig,
-            margin_fig, optimal_fig, parcoords_fig, lag_fig, attract_fig,
-            regression_fig, correlation_stats_text, scatter_fig, stats_panel, brushing_info_text)
+    # Calculate Subregion panel data (Total Seizures in Tons for top 3 regions)
+    def get_subregion_total(region_name):
+        if len(filtered_seizures) == 0: return "0t"
+        total_kg = filtered_seizures[filtered_seizures['SubRegion'] == region_name]['Kilograms'].sum()
+        return f"{total_kg / 1000:,.1f}t"
+
+    western_val = get_subregion_total('Western and Central Europe')
+    eastern_val = get_subregion_total('Eastern Europe')
+    southern_val = get_subregion_total('South-Eastern Europe')
+
+    return (subregion_fig, timeseries_fig,
+            margin_fig, parcoords_fig, lag_fig, attract_fig,
+            regression_fig, correlation_stats_text, scatter_fig, stats_panel, brushing_info_text,
+            western_val, eastern_val, southern_val)
 
 
 def _empty_fig(msg):
