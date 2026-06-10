@@ -555,7 +555,17 @@ app.layout = dbc.Container([
         is_open=False,
         placement="end",
         style={"width": "420px"},
-        children=[html.Div(id='country-detail-content')]
+        children=[
+            html.Div(id='country-detail-content'),
+            # The button lives permanently in the layout now
+            dbc.Button(
+                "Back to subregion view", 
+                id='zoom-back-button', 
+                color="secondary", 
+                size="sm", 
+                className="mt-4"
+            )
+        ]
     ),
 
     # Hidden state stores
@@ -635,6 +645,7 @@ def handle_map_zoom(click_data, zoom_level, zoom_subregion):
     elif zoom_level == 1:
         # Clicked a country inside a subregion — open detail panel (level 2)
         country = point.get('hovertext') or point.get('text')
+        logging.info(f"Opening detail panel for {country}")
         if not country:
             return 0, None, False, []
 
@@ -648,6 +659,7 @@ def handle_map_zoom(click_data, zoom_level, zoom_subregion):
 
         # Mini trend chart
         if len(country_seizures) > 0:
+            logging.info("Drawing mini trend chart.")
             ts = country_seizures.groupby(['Year', 'Substance'])['Kilograms'].sum().reset_index()
             ts['Value'] = ts['Kilograms'] / 1000
             mini_fig = px.line(
@@ -680,9 +692,8 @@ def handle_map_zoom(click_data, zoom_level, zoom_subregion):
                 ])), md=6),
             ], className="mb-3"),
             html.P([html.Strong("Top substance: "), top_substance]),
-            dcc.Graph(figure=mini_fig, config={'displayModeBar': False}),
-            dbc.Button("Back to subregion view", id='zoom-back-button',
-                       color="secondary", size="sm", className="mt-2")
+            dcc.Graph(figure=mini_fig, config={'displayModeBar': False})
+            # Removed the dynamic button from here
         ])
 
         return 1, zoom_subregion, True, content
@@ -697,7 +708,11 @@ def handle_map_zoom(click_data, zoom_level, zoom_subregion):
     Input('zoom-back-button', 'n_clicks'),
     prevent_initial_call=True
 )
-def zoom_back(_):
+def zoom_back(n_clicks):
+    # Guard against the button initializing
+    if not n_clicks:
+        return dash.no_update, dash.no_update, dash.no_update
+        
     return 0, None, False
 
 
@@ -762,8 +777,14 @@ def update_dashboard(selected_substances, year_range, timeseries_metric,
     elif subregion_click and triggered_id == 'subregion-map':
         try:
             if 'customdata' in subregion_click['points'][0]:
-                selected_subregion = subregion_click['points'][0]['customdata'][0]
-                brushing_info_text = f"Subregion selected: {selected_subregion}"
+                clicked_val = subregion_click['points'][0]['customdata'][0]
+                # Distinguish between a subregion click and a country click
+                if clicked_val in drug_prices_df['SubRegion'].unique():
+                    selected_subregion = clicked_val
+                    brushing_info_text = f"Subregion selected: {selected_subregion}"
+                else:
+                    selected_country = clicked_val
+                    brushing_info_text = f"Country selected: {selected_country}"
         except (KeyError, IndexError, TypeError):
             pass
 
