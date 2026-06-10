@@ -1,5 +1,5 @@
 Open todos:
-- Overview page noch Daten 3 panels für Subregions
+[x] Overview page noch Daten 3 panels für Subregions
 - remove 25 bar cap
 - Temporal und Profitability ggf. kombinieren
 - Enforcement Priority wegschmeißen

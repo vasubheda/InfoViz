@@ -158,6 +158,17 @@ def build_layout(data):
                         dbc.Col(_graph("ts-price",    displaymodebar=False), md=4),
                         dbc.Col(_graph("ts-purity",   displaymodebar=False), md=4),
                     ], className="g-2 mb-2")),
+                    # Subregion breakdown: the bars/series above aggregate across
+                    # all of Europe; these split the same metrics by subregion.
+                    # Always shown (they work for a single year too).
+                    dbc.Row([
+                        dbc.Col(_graph("sr-seizures", displaymodebar=False),
+                                md=4),
+                        dbc.Col(_graph("sr-price", displaymodebar=False),
+                                md=4),
+                        dbc.Col(_graph("sr-purity", displaymodebar=False),
+                                md=4),
+                    ], className="g-2 mb-2"),
                 ]),
 
                 # --- Panel Temporal: a metric for one substance, mapped & animated ---

@@ -1,6 +1,6 @@
 *.zip
 
-venv/
+.venv/
 __pycache__/
 *.pyc
 src/.venv/

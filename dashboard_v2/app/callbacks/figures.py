@@ -8,7 +8,7 @@ from dash import Input, Output, State, html, no_update
 
 from ..figures import (border_arbitrage, key_indicators, lag_corr,
                        maps, multivariate, priority,
-                       priority_heatmap, temporal_maps, timeseries)
+                       priority_heatmap, subregion, temporal_maps, timeseries)
 from ..figures.filtering import Filters, apply_filters
 from .. import theme
 
@@ -35,6 +35,9 @@ def register(app, data):
         Output("ki-seizures-bar", "figure"),
         Output("ki-price-bar", "figure"),
         Output("ki-purity-bar", "figure"),
+        Output("sr-seizures", "figure"),
+        Output("sr-price", "figure"),
+        Output("sr-purity", "figure"),
         Output("substance-legend", "children"),
         Output("q2-insight-banner", "children"),
         Input("substance-select-store", "data"),
@@ -90,6 +93,7 @@ def register(app, data):
         reg_fig = reg_stats = \
         prio_hm = margin = prio = border_arb = \
         border_gaps = flow_map = neigh_map = ki_seiz = ki_price = ki_purity = \
+        sr_seiz = sr_price = sr_purity = \
         q2_insight = no_update
 
         # OVERVIEW TAB
@@ -110,6 +114,11 @@ def register(app, data):
             t_comb = apply_filters(data.combined, tbl_filters, selection)
             ki_seiz, ki_price, ki_purity = key_indicators.substance_bars(
                 data, all_substances, active_store, t_seiz, t_prices, t_comb)
+            # Subregion trends of the same three metrics, coloured by subregion.
+            # Always shown; a single-year selection draws bars instead of lines.
+            sr_comb_outer = apply_filters(data.combined_outer, filters, selection)
+            sr_seiz, sr_price, sr_purity = subregion.subregion_trends(
+                data, f_seiz, sr_comb_outer, year_range[0] == year_range[1])
 
         # TEMPORAL TAB — animated map of one metric for one substance. The full
         # continent is always drawn (grey base); a country subset just restricts
@@ -172,7 +181,8 @@ def register(app, data):
         return (enf_map, temp_maps, ts_seiz, ts_price_fig, ts_purity_fig,
                 lag_fig, lag_note, reg_fig, reg_stats, prio_hm,
                 margin, prio, border_arb, border_gaps, flow_map, neigh_map,
-                kpi, ki_seiz, ki_price, ki_purity, subst_cards, q2_insight)
+                kpi, ki_seiz, ki_price, ki_purity,
+                sr_seiz, sr_price, sr_purity, subst_cards, q2_insight)
 
     # Hide the Overview time-series row when a single year is selected (no trend
     # to draw); the substance bars above it stay visible.

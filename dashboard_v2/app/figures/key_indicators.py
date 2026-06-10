@@ -79,10 +79,10 @@ def substance_bars(data, all_substances, active, seiz, prices, comb, height=260)
                     "Seizures (t)", "Seizures: %{y:,.1f} t",
                     fmt=lambda v: f"{v:,.1f}", height=height)
     fig_price = _bar(active_subs, col(price_by), colors,
-                     "Avg price (USD/g)", "Avg price: $%{y:,.2f}/g",
+                     "Avg Price (USD/g)", "Avg price: $%{y:,.2f}/g",
                      fmt=lambda v: f"${v:,.0f}", tickprefix="$", height=height)
     fig_purity = _bar(active_subs, col(purity_by), colors,
-                      "Avg purity (%)", "Avg purity: %{y:.1f}%",
+                      "Avg Purity (%)", "Avg purity: %{y:.1f}%",
                       fmt=lambda v: f"{v:.0f}%", height=height)
     return fig_seiz, fig_price, fig_purity
 
