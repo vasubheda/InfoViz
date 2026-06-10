@@ -173,7 +173,7 @@ def build_layout(data):
                 # --- Panel Temporal: a metric for one substance, mapped & animated ---
                 html.Div(id="panel-temporal", children=[
                     dbc.Row([
-                        _card(["Metric by country, over time (animated) ",
+                        _card(["Metric by country, over time",
                                html.I(className="bi bi-info-circle text-muted "
                                       "ms-1", id="temporal-info",
                                       style={"cursor": "help"}),
@@ -212,6 +212,8 @@ def build_layout(data):
                                                     className="small"),
                                    ], md=6),
                                ], className="mb-2"),
+                               html.Div(id="temporal-highlights",
+                                        className="mb-3"),
                                _loading(dcc.Graph(id="temporal-maps"))],
                               md=12),
                     ], className="mb-4"),
@@ -297,27 +299,30 @@ def build_layout(data):
                                 "export). Or select multiple / all countries to "
                                 "map the best arbitrage corridor per substance "
                                 "(cheapest wholesale → priciest retail) and rank "
-                                "the top corridors below (adjustable).",
+                                "the top 25 corridors below. Figures are a "
+                                "snapshot of the selected year, not an "
+                                "average across the range.",
                                 target="q3-info", placement="bottom"),
                         ],
-                              [# Priority gaps surfaced at the top of the card body.
+                              [# Priority gaps surfaced at the top of the body.
                                html.Div(id="border-arbitrage-gaps",
                                         className="mb-3"),
                                html.Div(_loading(dcc.Graph(id="market-flow-map")),
                                         id="q3-flow-wrap",
                                         style={"display": "none"}),
-                               # Multi-country only: how many ranked corridors to
-                               # show. Hidden in single-country mode (see
-                               # _toggle_q3_layout in callbacks/figures.py).
+                               # Year picker: the arbitrage prices/seizures are
+                               # a snapshot of this single year (not averaged
+                               # across the range). Bounds track the global
+                               # From/To range (see _q3_year_bounds in
+                               # callbacks/figures.py). Shown in both modes,
+                               # sat below the per-substance flow map.
                                html.Div([
-                                   html.Label("Corridors to show (by spread)",
-                                              className="small text-muted mb-1"),
-                                   dcc.Slider(id="q3-top-n", min=5, max=50,
-                                              step=5, value=25,
-                                              marks={n: str(n) for n in
-                                                     (5, 10, 25, 50)},
+                                   html.Label("Year", className="small "
+                                              "text-muted mb-1"),
+                                   dcc.Slider(id="q3-year", step=None,
+                                              included=False,
                                               tooltip={"placement": "bottom"}),
-                               ], id="q3-topn-wrap", className="mb-2"),
+                               ], id="q3-year-wrap", className="mb-3"),
                                _loading(dcc.Graph(id="border-arbitrage-chart"))],
                               md=8, id="q3-chart-col"),
                         _card("Selected country & neighbours",

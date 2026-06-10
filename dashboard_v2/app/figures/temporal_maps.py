@@ -30,13 +30,95 @@ _LEVELS = ["Retail", "Wholesale"]
 _METRICS = {
     "price": dict(table="prices", value="Typical_USD", agg="mean", split=True,
                   label="Price (USD/g)", hover="Price: $%{z:,.0f}/g",
-                  cbar="USD/g"),
+                  cbar="USD/g", hover_fmt="${:,.0f}/g"),
     "purity": dict(table="purity", value="Typical", agg="mean", split=True,
-                   label="Purity (%)", hover="Purity: %{z:.1f}%", cbar="Purity (%)"),
+                   label="Purity (%)", hover="Purity: %{z:.1f}%",
+                   cbar="Purity (%)", hover_fmt="{:.1f}%"),
     "seizures": dict(table="seizures", value="Kilograms", agg="sum", split=False,
                      label="Seizures (t)", hover="Seizures: %{z:,.1f} t",
-                     cbar="Seizures (t)"),
+                     cbar="Seizures (t)", hover_fmt="{:,.1f} t"),
 }
+
+
+def _temporal_agg(data, metric, substance, year_range, countries=None):
+    """Shared aggregation for the temporal map and its highlights: one value per
+    (panel, Country, Year) for `metric`/`substance` over `year_range`.
+
+    Returns (agg_df, cfg, scale) or None when there is no data. For split
+    metrics (price/purity) the panel column is LevelOfSale; seizures have none.
+    """
+    cfg = _METRICS.get(metric or "purity", _METRICS["purity"])
+    df = getattr(data, cfg["table"])
+    if metric == "purity":
+        df = df[df["Measurement"].astype(str).str.contains("percent", case=False,
+                                                            na=False)]
+    df = df[df["Substance"] == substance]
+    df = df[df["Year"].between(year_range[0], year_range[1])]
+    df = df[df["Country"].isin(set(data.europe_gdf["NAME"]))]
+    if countries:
+        df = df[df["Country"].isin(set(countries))]
+    df = df.dropna(subset=[cfg["value"]])
+    if len(df) == 0:
+        return None
+    df = df.assign(Year=df["Year"].astype(int))
+    scale = 0.001 if metric == "seizures" else 1.0
+    group_cols = (["LevelOfSale", "Country", "Year"] if cfg["split"]
+                  else ["Country", "Year"])
+    agg = (df.groupby(group_cols)[cfg["value"]].agg(cfg["agg"])
+           * scale).reset_index()
+    return agg, cfg, scale
+
+
+def temporal_highlights(data, metric, substance, year_range, countries=None):
+    """Ranked HTML callout of the highest-valued countries for the temporal
+    map's current metric/substance/selection.
+
+    Mirrors the profitability tab's markup highlights: a coloured substance
+    swatch, the country in bold, and the figure in small text. Split metrics
+    (price/purity) surface one winner per sale level (retail & wholesale);
+    seizures surface a single overall winner. Surfaced above the temporal map.
+    """
+    from dash import html
+
+    if not substance:
+        return html.Small("Select a substance to see highlights.",
+                          className="text-muted")
+
+    cfg = _METRICS.get(metric or "purity", _METRICS["purity"])
+    res = _temporal_agg(data, metric, substance, year_range, countries)
+    if res is None:
+        return html.Small(f"No {cfg['label']} data for the current selection.",
+                          className="text-muted")
+    agg, cfg, _ = res
+    value_col = cfg["value"]
+    swatch_color = data.substance_color_map.get(substance, "#888")
+
+    def _li(label, d):
+        if len(d) == 0:
+            return None
+        row = d.loc[d[value_col].idxmax()]
+        return html.Li([
+            html.Span(style={"display": "inline-block", "width": "10px",
+                             "height": "10px", "borderRadius": "50%",
+                             "backgroundColor": swatch_color,
+                             "marginRight": "6px"}),
+            html.Strong(f"{row['Country']} "),
+            html.Span(f"{label}{cfg['hover_fmt'].format(row[value_col])} "
+                      f"({int(row['Year'])})", className="small"),
+        ], className="mb-1")
+
+    if cfg["split"]:
+        items = [_li("retail: ", agg[agg["LevelOfSale"] == "Retail"]),
+                 _li("wholesale: ", agg[agg["LevelOfSale"] == "Wholesale"])]
+    else:
+        items = [_li("", agg)]
+    items = [li for li in items if li is not None]
+
+    return html.Div([
+        html.Strong(f"Highest {cfg['label']} for {substance} "
+                    "in the current selection:"),
+        html.Ul(items, className="mt-2 mb-0"),
+    ], className="small")
 
 
 @memoize_figure()

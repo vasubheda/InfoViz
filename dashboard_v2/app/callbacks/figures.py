@@ -15,6 +15,7 @@ def register(app, data):
     @app.callback(
         Output("enforcement-map", "figure"),
         Output("temporal-maps", "figure"),
+        Output("temporal-highlights", "children"),
         Output("ts-seizures", "figure"),
         Output("ts-price", "figure"),
         Output("ts-purity", "figure"),
@@ -46,11 +47,11 @@ def register(app, data):
         Input("detail-tabs", "active_tab"),
         Input("temporal-metric", "value"),
         Input("temporal-substance", "value"),
-        Input("q3-top-n", "value"),
+        Input("q3-year", "value"),
     )
     def update(active_store, countries, year_from, year_to, x_axis, y_axis,
                selection, active_tab, temporal_metric, temporal_substance,
-               q3_top_n):
+               q3_year):
         selection = dict(selection or {})
 
         # The From/To dropdowns are independent, so the pair can arrive reversed
@@ -86,7 +87,7 @@ def register(app, data):
         subst_cards = key_indicators.substance_cards(data, all_substances, active_store)
 
         # Output Defaults (lazy loading - don't update if not active tab)
-        temp_maps = no_update
+        temp_maps = temp_hi = no_update
         ts_seiz = ts_price_fig = ts_purity_fig = lag_fig = lag_note = \
         reg_fig = reg_stats = margin = margin_hi = border_arb = \
         border_gaps = flow_map = neigh_map = ki_seiz = ki_price = ki_purity = \
@@ -124,6 +125,9 @@ def register(app, data):
             temp_maps = temporal_maps.temporal_maps(
                 data, temporal_metric, temporal_substance, year_range,
                 countries=countries)
+            temp_hi = temporal_maps.temporal_highlights(
+                data, temporal_metric, temporal_substance, year_range,
+                countries=countries)
 
         # TAB Q1
         elif active_tab == "tab-q1":
@@ -145,11 +149,20 @@ def register(app, data):
 
         # TAB Q3
         elif active_tab == "tab-q3":
+            # Q3 is a single-year snapshot (prices meaned / seizures summed
+            # within one year), not an average across the From/To range. Clamp
+            # the slider's value into the current range; default to the latest
+            # year when it is None (first load) or stale after a range change.
+            q3_yr = q3_year if (q3_year is not None
+                                and year_range[0] <= q3_year <= year_range[1]) \
+                else year_range[1]
+            q3_filters = Filters(substances=substances,
+                                 year_range=[q3_yr, q3_yr])
             geo_unfiltered = {"country": None, "countries": None,
                               "substance": selection.get("substance"),
                               "year": selection.get("year"), "subregion": None}
-            arb_prices = apply_filters(data.prices, filters, geo_unfiltered)
-            arb_seiz = apply_filters(data.seizures, filters, geo_unfiltered)
+            arb_prices = apply_filters(data.prices, q3_filters, geo_unfiltered)
+            arb_seiz = apply_filters(data.seizures, q3_filters, geo_unfiltered)
             if len(countries) == 1:
                 # Single-country land-border arbitrage (+ neighbour map).
                 single_country = countries[0]
@@ -165,13 +178,11 @@ def register(app, data):
                 flow_map = border_arbitrage.market_flow_map(
                     data, arb_prices, arb_seiz, countries, substances)
                 border_arb = border_arbitrage.market_arbitrage(
-                    data, arb_prices, arb_seiz, countries, substances,
-                    cap=q3_top_n)
+                    data, arb_prices, arb_seiz, countries, substances)
                 border_gaps = border_arbitrage.market_gap_list(
-                    data, arb_prices, arb_seiz, countries, substances,
-                    cap=q3_top_n)
+                    data, arb_prices, arb_seiz, countries, substances)
 
-        return (enf_map, temp_maps, ts_seiz, ts_price_fig, ts_purity_fig,
+        return (enf_map, temp_maps, temp_hi, ts_seiz, ts_price_fig, ts_purity_fig,
                 lag_fig, lag_note, reg_fig, reg_stats,
                 margin, margin_hi, border_arb, border_gaps, flow_map, neigh_map,
                 kpi, ki_seiz, ki_price, ki_purity,
@@ -195,16 +206,32 @@ def register(app, data):
         Output("q3-chart-col", "md"),
         Output("q3-neighbour-col", "style"),
         Output("q3-flow-wrap", "style"),
-        Output("q3-topn-wrap", "style"),
         Input("country-store", "data"),
     )
     def _toggle_q3_layout(countries):
         single = len(countries or []) == 1
         hide = {"display": "none"}
-        # The corridor-count slider only applies to the multi-country market
-        # chart, so it shares the flow map's single-country-hidden behaviour.
         return ((8 if single else 12), ({} if single else hide),
-                (hide if single else {}), (hide if single else {}))
+                (hide if single else {}))
+
+    # Keep the Q3 year slider's bounds/marks in sync with the global From/To
+    # range, snapping its value into range. The slider is a single-year picker
+    # (Q3 shows one year's snapshot), so a single-year From==To range collapses
+    # it to that lone year.
+    @app.callback(
+        Output("q3-year", "min"),
+        Output("q3-year", "max"),
+        Output("q3-year", "marks"),
+        Output("q3-year", "value"),
+        Input("year-from", "value"),
+        Input("year-to", "value"),
+        State("q3-year", "value"),
+    )
+    def _q3_year_bounds(year_from, year_to, current):
+        lo, hi = sorted([year_from, year_to])
+        marks = {y: str(y) for y in range(lo, hi + 1)}
+        value = current if (current is not None and lo <= current <= hi) else hi
+        return lo, hi, marks, value
 
 
 def _lag_limitations(data):

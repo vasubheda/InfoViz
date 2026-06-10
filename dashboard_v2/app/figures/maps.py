@@ -95,8 +95,12 @@ def _margin_winners(prices, substances, selection):
         p = p[p["Substance"].isin(set(substances))]
     if selection.get("substance"):
         p = p[p["Substance"] == selection["substance"]]
+    # Restrict to the master-panel country selection: a single picked country
+    # (`country`) or a multi-country subset (`countries`).
     if selection.get("countries"):
         p = p[p["Country"].isin(selection["countries"])]
+    elif selection.get("country"):
+        p = p[p["Country"] == selection["country"]]
     if len(p) == 0:
         return None
 

@@ -492,7 +492,7 @@ def market_arbitrage(data, filtered_prices, filtered_seizures, pool, substances,
 
     Used when multiple/all countries are selected (no single anchor): one bar
     per (substance, origin → destination) corridor, ranked by spread and capped
-    at the top ``cap`` (user-adjustable; defaults to 25). Bars whose corridor is
+    at the top ``cap`` (defaults to 25). Bars whose corridor is
     the best for its substance — i.e. the ones drawn as arrows on the flow map
     above — carry a ▸ marker. Same visual language as the single-country chart
     (hue = substance, opacity = corridor seizure pressure, ⚑ outline = priority
