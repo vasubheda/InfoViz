@@ -14,7 +14,7 @@ from .cache import memoize_figure
 @memoize_figure()
 def lag_correlation(data, selection, target="Typical_USD"):
     lag = data.lag_correlation
-    lag = lag[lag["target"] == target]
+    lag = lag[(lag["target"] == target) & (lag["Substance"] != "Other")]
     country = selection.get("country")
 
     if country:
