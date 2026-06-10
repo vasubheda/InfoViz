@@ -27,12 +27,16 @@ def register(app, data):
         pt = click["points"][0]
         # The base choropleth carries hovertext (country NAME) and is the normal
         # path. The selection-outline overlay carries none, so fall back to its
-        # polygon index, which is the original europe_gdf row index.
+        # `location`: that overlay is keyed by country NAME, while the base trace
+        # is keyed by the europe_gdf row index — so map an int index back to a
+        # name and pass a NAME straight through.
         name = pt.get("hovertext")
         if name:
             return name
         loc = pt.get("location")
-        return idx_to_country.get(loc) if loc is not None else None
+        if loc is None:
+            return None
+        return idx_to_country.get(loc, loc)
 
     def _region_of_trace(restyle):
         """Map a legend restyle event to its subregion name (or None)."""

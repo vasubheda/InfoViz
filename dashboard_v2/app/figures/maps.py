@@ -26,14 +26,25 @@ def _selected_countries(selection):
     return list(selection.get("countries") or [])
 
 
+# Index of the country-outline overlay among the enforcement-map traces. The
+# base choropleth is one px trace per subregion, drawn first; the outline is
+# appended last, so it sits at `len(subregion_order)`. The selection callback
+# patches *only* this trace's `locations`/`z`, leaving the heavy base traces
+# untouched (no full-figure redraw on a country click).
+def enforcement_outline_index(data):
+    return len(subregion_order(data))
+
+
 @memoize_figure()
-def enforcement_map(data, map_seizures, selection):
+def enforcement_map(data, selection):
     """Single-level choropleth: every country coloured by its subregion.
 
     Interaction (wired in callbacks/zoom.py): clicking a country toggles that
     country in the global country filter; clicking a subregion in the legend
-    toggles the whole region. Currently-selected countries are outlined.
-    Seizure tonnage (for the active substance/year window) is shown on hover.
+    toggles the whole region. Currently-selected countries are outlined. This
+    is a pure region/country selector — it depends only on the country
+    selection, never on the active substance/year, so changing those filters
+    does not rebuild it.
     """
     country_subregion = data.prices[["Country", "SubRegion"]].drop_duplicates()
     order = subregion_order(data)
@@ -44,37 +55,42 @@ def enforcement_map(data, map_seizures, selection):
     if len(valid) == 0:
         return helpers.empty_fig("No map data")
 
-    tons = (map_seizures.groupby("Country")["Kilograms"].sum() / 1000).reset_index()
-    tons.columns = ["Country", "Tons"]
-    valid = valid.merge(tons, how="left", left_on="NAME", right_on="Country")
-    valid["Tons"] = valid["Tons"].fillna(0)
-
     fig = px.choropleth(
         valid, geojson=valid.geometry.__geo_interface__, locations=valid.index,
         color="SubRegion", hover_name="NAME", color_discrete_map=colors,
-        category_orders={"SubRegion": order}, hover_data={"Tons": ":.1f"},
+        category_orders={"SubRegion": order},
     )
     fig.update_layout(legend=dict(title="Subregion", orientation="v",
                       yanchor="middle", y=0.5, xanchor="left", x=1.02,
                       bgcolor="rgba(255,255,255,0.9)", bordercolor="#333",
-                      borderwidth=1))
+                      borderwidth=1),
+                      # Constant uirevision so patching the outline never resets
+                      # the user's zoom/pan or re-runs the entry transition.
+                      uirevision="enforcement-map")
 
-    # Outline currently-selected countries (added last so legend indices,
-    # which the toggle callback relies on, stay aligned with `order`).
+    # Outline currently-selected countries with a single overlay trace, always
+    # present (even when empty) and keyed by country NAME over the full-Europe
+    # geojson. This lets the selection callback patch ONLY this trace's
+    # locations/z on a click — Plotly then just redraws the outline instead of
+    # rebuilding the whole choropleth. It is added last so the base subregion
+    # traces keep the legend indices the toggle callback relies on; its index is
+    # `enforcement_outline_index(data)`.
+    #
+    # hoverinfo="none" (not "skip") so the outline still emits click events:
+    # otherwise it would swallow clicks on an already-selected country and you
+    # could never toggle it back off. The handler resolves the country from the
+    # polygon, so the missing hovertext is fine.
     selected = _selected_countries(selection)
-    sel_gdf = data.europe_gdf[data.europe_gdf["NAME"].isin(selected)]
-    if len(sel_gdf):
-        # hoverinfo="none" (not "skip") so the outline overlay still emits click
-        # events: otherwise it swallows clicks on an already-selected country and
-        # you could never toggle it back off. The click handler resolves the
-        # country from the polygon index, so the missing hovertext is fine.
-        fig.add_trace(go.Choropleth(
-            geojson=sel_gdf.geometry.__geo_interface__, locations=sel_gdf.index,
-            z=[1] * len(sel_gdf), showscale=False, showlegend=False,
-            colorscale=[[0, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]],
-            marker_line_color="#111", marker_line_width=2.5, hoverinfo="none"))
+    fig.add_trace(go.Choropleth(
+        geojson=data.europe_gdf.__geo_interface__, featureidkey="properties.NAME",
+        locations=selected, z=[1] * len(selected), showscale=False,
+        showlegend=False, colorscale=[[0, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]],
+        marker_line_color="#111", marker_line_width=2.5, hoverinfo="none"))
 
-    return helpers.base_geo_layout(fig, right_margin=10)
+    # clickmode="event" (not "event+select"): clicks still fire clickData so the
+    # outline patch runs, but Plotly applies NO selection styling — without this
+    # a click dims every other country and only the last-clicked one shows.
+    return helpers.base_geo_layout(fig, right_margin=10, clickmode="event")
 
 
 # Inlined geojson per facet×frame trace balloons the payload; coarse outline is

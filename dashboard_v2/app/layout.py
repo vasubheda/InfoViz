@@ -5,6 +5,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 
 from .components.stores import make_stores
+from .figures.maps import enforcement_map
 
 
 def _loading(component):
@@ -12,12 +13,20 @@ def _loading(component):
     return dcc.Loading(component, type="default", color="#495057")
 
 
-def _graph(graph_id, hint=None, displaymodebar=True):
+def _graph(graph_id, hint=None, displaymodebar=True, figure=None, loading=True):
     children = []
     if hint:
         children.append(html.Small(hint, className="text-muted d-block mb-1"))
-    children.append(_loading(
-        dcc.Graph(id=graph_id, config={"displayModeBar": displaymodebar})))
+    graph_kwargs = {"id": graph_id, "config": {"displayModeBar": displaymodebar}}
+    # Seed an initial figure so a Patch callback has a figure to patch into
+    # (the map is drawn once here; clicks only patch its outline trace).
+    if figure is not None:
+        graph_kwargs["figure"] = figure
+    graph = dcc.Graph(**graph_kwargs)
+    # loading=False skips the dcc.Loading overlay — used for the enforcement map,
+    # whose clicks only Patch the outline trace; the overlay would otherwise
+    # flash a spinner over the whole map on every selection.
+    children.append(_loading(graph) if loading else graph)
     return children
 
 
@@ -97,7 +106,8 @@ def build_layout(data):
                                   className="text-muted small"),
                     ], className="d-flex justify-content-between "
                                  "align-items-baseline mt-3 mb-1"),
-                    *_graph("enforcement-map"),
+                    *_graph("enforcement-map",
+                            figure=enforcement_map(data, {}), loading=False),
                     html.H6("Substances", className="master-heading mt-3"),
                     html.Div(id="substance-legend",
                              className="d-flex flex-wrap mb-2"),

@@ -26,8 +26,9 @@ def filter_note_fig(height: int = 400) -> go.Figure:
     )
 
 
-def base_geo_layout(fig: go.Figure, height: int = 400, right_margin: int = 0):
+def base_geo_layout(fig: go.Figure, height: int = 400, right_margin: int = 0,
+                    clickmode: str = "event+select"):
     fig.update_geos(fitbounds="locations", visible=False, projection_type="mercator")
     fig.update_layout(margin=dict(l=0, r=right_margin, t=30, b=0),
-                      height=height, clickmode="event+select")
+                      height=height, clickmode=clickmode)
     return fig

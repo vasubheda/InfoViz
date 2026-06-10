@@ -3,7 +3,7 @@
 re-aggregate under the active selection (fixing the old app's frozen-panel bug).
 """
 import dash_bootstrap_components as dbc
-from dash import Input, Output, State, html, no_update
+from dash import Input, Output, Patch, State, html, no_update
 
 from ..figures import (border_arbitrage, key_indicators, lag_corr,
                        maps, multivariate, subregion, temporal_maps, timeseries)
@@ -12,8 +12,90 @@ from .. import theme
 
 
 def register(app, data):
+    def _context(active_store, countries, year_from, year_to, selection):
+        """Normalise the global filter/selection inputs both callbacks share.
+
+        The From/To dropdowns are independent, so the pair can arrive reversed
+        (From > To); normalise to [low, high]. Active substances come from the
+        legend store ([] -> "all substances"). The country selection (driven by
+        the map) folds into the selection dict: exactly one -> single-country
+        context; several -> a multi-country subset.
+        """
+        selection = _fold_countries(selection, countries)
+        year_range = sorted([year_from, year_to])
+        all_substances = data.substances
+        active_store = active_store or []
+        substances = active_store or all_substances
+        filters = Filters(substances=substances, year_range=list(year_range))
+        return (selection, substances, all_substances, year_range,
+                list(countries or []), filters)
+
+    def _fold_countries(selection, countries):
+        """Fold the map-driven country selection into the selection dict the
+        figure builders understand: exactly one -> single-country context;
+        several -> a multi-country subset."""
+        selection = dict(selection or {})
+        countries = countries or []
+        if len(countries) == 1:
+            selection["country"], selection["countries"] = countries[0], None
+        elif len(countries) > 1:
+            selection["country"], selection["countries"] = None, countries
+        return selection
+
+    # MASTER PANEL — split into three independent callbacks so each element only
+    # rebuilds on the inputs it actually depends on (and never on detail-tabs'
+    # active_tab):
+    #   • the Regions & countries map  -> country selection only
+    #   • the substance legend         -> substance selection only
+    #   • the KPI total                -> all global filters
+    # So picking a substance/year does not redraw the map, and clicking a
+    # country on the map does not redraw the legend.
+
+    # Regions & countries map: a pure selector. The base choropleth is seeded
+    # once in the layout; a selection change only PATCHES the outline overlay
+    # trace's locations/z, so Plotly redraws the outline instead of rebuilding
+    # the whole map.
+    _outline_idx = maps.enforcement_outline_index(data)
+
     @app.callback(
         Output("enforcement-map", "figure"),
+        Input("country-store", "data"),
+        Input("selection-store", "data"),
+    )
+    def update_map(countries, selection):
+        selected = maps._selected_countries(_fold_countries(selection, countries))
+        patch = Patch()
+        patch["data"][_outline_idx]["locations"] = selected
+        patch["data"][_outline_idx]["z"] = [1] * len(selected)
+        return patch
+
+    # Substance legend: driven only by the active substance set.
+    @app.callback(
+        Output("substance-legend", "children"),
+        Input("substance-select-store", "data"),
+    )
+    def update_legend(active_store):
+        return key_indicators.substance_cards(data, data.substances,
+                                              active_store or [])
+
+    # KPI total-seizures: depends on every global filter (substance, year,
+    # country selection).
+    @app.callback(
+        Output("kpi-panel", "children"),
+        Input("substance-select-store", "data"),
+        Input("country-store", "data"),
+        Input("year-from", "value"),
+        Input("year-to", "value"),
+        Input("selection-store", "data"),
+    )
+    def update_kpi(active_store, countries, year_from, year_to, selection):
+        selection, _substances, _all, _yr, _co, filters = \
+            _context(active_store, countries, year_from, year_to, selection)
+        f_prices = apply_filters(data.prices, filters, selection)
+        f_seiz = apply_filters(data.seizures, filters, selection)
+        return _kpi(f_seiz, f_prices)
+
+    @app.callback(
         Output("temporal-maps", "figure"),
         Output("temporal-highlights", "children"),
         Output("ts-seizures", "figure"),
@@ -29,14 +111,12 @@ def register(app, data):
         Output("border-arbitrage-gaps", "children"),
         Output("market-flow-map", "figure"),
         Output("neighbour-map", "figure"),
-        Output("kpi-panel", "children"),
         Output("ki-seizures-bar", "figure"),
         Output("ki-price-bar", "figure"),
         Output("ki-purity-bar", "figure"),
         Output("sr-seizures", "figure"),
         Output("sr-price", "figure"),
         Output("sr-purity", "figure"),
-        Output("substance-legend", "children"),
         Input("substance-select-store", "data"),
         Input("country-store", "data"),
         Input("year-from", "value"),
@@ -52,39 +132,8 @@ def register(app, data):
     def update(active_store, countries, year_from, year_to, x_axis, y_axis,
                selection, active_tab, temporal_metric, temporal_substance,
                q3_year):
-        selection = dict(selection or {})
-
-        # The From/To dropdowns are independent, so the pair can arrive reversed
-        # (From > To); normalise to [low, high] so filtering and the single-year
-        # guard (From == To) behave regardless of which end is larger.
-        year_range = sorted([year_from, year_to])
-
-        # Active substances come from the Key-indicators legend store.
-        # Empty list -> treat as "all substances".
-        all_substances = data.substances
-        active_store = active_store or []
-        substances = active_store or all_substances
-
-        # The country selection (driven by the map) folds into the selection
-        # dict the figure builders already understand: exactly one -> a
-        # single-country context (drives per-country views like the Q1 lag
-        # bars); several -> a multi-country subset.
-        countries = countries or []
-        if len(countries) == 1:
-            selection["country"] = countries[0]
-            selection["countries"] = None
-        elif len(countries) > 1:
-            selection["country"] = None
-            selection["countries"] = countries
-
-        filters = Filters(substances=substances, year_range=list(year_range))
-        f_prices = apply_filters(data.prices, filters, selection)
-        f_seiz = apply_filters(data.seizures, filters, selection)
-        
-        # MASTER PANEL: Always update
-        enf_map = maps.enforcement_map(data, f_seiz, selection)
-        kpi = _kpi(f_seiz, f_prices)
-        subst_cards = key_indicators.substance_cards(data, all_substances, active_store)
+        selection, substances, all_substances, year_range, countries, filters = \
+            _context(active_store, countries, year_from, year_to, selection)
 
         # Output Defaults (lazy loading - don't update if not active tab)
         temp_maps = temp_hi = no_update
@@ -113,6 +162,7 @@ def register(app, data):
                 data, all_substances, active_store, t_seiz, t_prices, t_comb)
             # Subregion trends of the same three metrics, coloured by subregion.
             # Always shown; a single-year selection draws bars instead of lines.
+            f_seiz = apply_filters(data.seizures, filters, selection)
             sr_comb_outer = apply_filters(data.combined_outer, filters, selection)
             sr_seiz, sr_price, sr_purity = subregion.subregion_trends(
                 data, f_seiz, sr_comb_outer, year_range[0] == year_range[1])
@@ -182,11 +232,11 @@ def register(app, data):
                 border_gaps = border_arbitrage.market_gap_list(
                     data, arb_prices, arb_seiz, countries, substances)
 
-        return (enf_map, temp_maps, temp_hi, ts_seiz, ts_price_fig, ts_purity_fig,
+        return (temp_maps, temp_hi, ts_seiz, ts_price_fig, ts_purity_fig,
                 lag_fig, lag_note, reg_fig, reg_stats,
                 margin, margin_hi, border_arb, border_gaps, flow_map, neigh_map,
-                kpi, ki_seiz, ki_price, ki_purity,
-                sr_seiz, sr_price, sr_purity, subst_cards)
+                ki_seiz, ki_price, ki_purity,
+                sr_seiz, sr_price, sr_purity)
 
     # Hide the Overview time-series row when a single year is selected (no trend
     # to draw); the substance bars above it stay visible.
