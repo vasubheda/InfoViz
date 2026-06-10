@@ -1,9 +1,3 @@
-"""Within-country lagged seizure->price correlation ().
-
-Default view: substance-level aggregated r̄ (Fisher-z weighted mean across
-countries) with a 95% CI whisker and a significance marker. When a country is
-selected, switch to that country's per-substance bars.
-"""
 import plotly.graph_objects as go
 
 from .. import theme
@@ -22,15 +16,15 @@ def lag_correlation(data, selection, target="Typical_USD"):
         rows = rows.dropna(subset=["r"]).sort_values("r")
         if len(rows) == 0:
             return helpers.empty_fig(f"No within-country lag data for {country}", 300)
-        return _bar(data, rows, country, target, ci=False)
+        return bar(data, rows, country, target, ci=False)
 
     rows = lag[lag["level"] == "substance_aggregate"].dropna(subset=["r"]).sort_values("r")
     if len(rows) == 0:
         return helpers.empty_fig("Insufficient data for lag correlation", 300)
-    return _bar(data, rows, None, target, ci=True)
+    return bar(data, rows, None, target, ci=True)
 
 
-def _bar(data, rows, country, target, ci):
+def bar(data, rows, country, target, ci):
     colors = [data.substance_color_map.get(s, theme.TOL_MUTED[0])
               for s in rows["Substance"]]
     metric = "price" if target == "Typical_USD" else "purity"
@@ -53,8 +47,7 @@ def _bar(data, rows, country, target, ci):
         hovertemplate="<b>%{y}</b><br>r = %{x:.3f}<extra></extra>"))
     fig.add_vline(x=0, line_color="black", line_width=1)
 
-    # Value labels sit in the empty strip above each bar, anchored away from the
-    # bar so they never overlap the bar, the CI whisker, or the * marker.
+    # value labels go above each bar
     for (_, row), label in zip(rows.iterrows(), text):
         positive = row["r"] >= 0
         fig.add_annotation(
@@ -62,7 +55,7 @@ def _bar(data, rows, country, target, ci):
             xanchor="left" if positive else "right", yshift=13,
             font=dict(size=11), align="left" if positive else "right")
 
-    # Significance markers.
+    # significance markers
     if ci and "n_significant" in rows.columns:
         for _, row in rows.iterrows():
             if row.get("n_significant", 0) and row["n_significant"] > 0:

@@ -1,13 +1,7 @@
-"""The cross-filter brain: one callback that merges every brushing source into
-the canonical selection-store. ctx.triggered_id decides which dimension to set.
-
-This replaces the old 18-input monolith's if/elif reconstruction and the
-fragile ' Europe' string surgery / positional geodataframe indexing.
-"""
 from dash import ALL, Input, Output, State, ctx
 
 
-def _empty():
+def empty():
     return {"country": None, "countries": None, "substance": None,
             "year": None, "subregion": None}
 
@@ -23,10 +17,10 @@ def register(app, data):
     )
     def update_selection(margin_click, reset, current):
         trigger = ctx.triggered_id
-        sel = dict(current or _empty())
+        sel = dict(current or empty())
 
         if trigger == "reset-button":
-            return _empty(), "Selection cleared."
+            return empty(), "Selection cleared."
 
         try:
             if trigger == "margin-map" and margin_click:
@@ -40,8 +34,7 @@ def register(app, data):
 
         return sel, "Click any chart to filter the rest."
 
-    # Reset also clears the map-driven country selection and the substance
-    # legend selection, so one button returns the whole app to "all".
+    # reset also clears the map and substance selections
     @app.callback(
         Output("country-store", "data", allow_duplicate=True),
         Output("substance-select-store", "data", allow_duplicate=True),
@@ -51,9 +44,7 @@ def register(app, data):
     def reset_external_selections(_n):
         return [], []
 
-    # Clicking a substance in the shared Key-indicators legend toggles it in the
-    # active set. The store uses [] = "all active", so the first click on a
-    # full-active legend deselects one by materialising all-minus-that.
+    # clicking a substance in the legend toggles it; [] means all active
     all_substances = data.substances
 
     @app.callback(
@@ -66,9 +57,7 @@ def register(app, data):
         clicked = ctx.triggered_id and ctx.triggered_id.get("index")
         if not clicked:
             return current or []
-        # Ignore spurious fires caused by the substance cards being re-rendered
-        # (new components mount with n_clicks=0; Dash fires ALL-pattern callbacks
-        # for them even though no real click occurred).
+        # ignore spurious fires from cards mounting with n_clicks=0
         triggered_value = ctx.triggered[0]["value"] if ctx.triggered else None
         if not triggered_value:
             return current or []
@@ -78,12 +67,10 @@ def register(app, data):
         else:
             # keep canonical (data.substances) order
             active = [s for s in all_substances if s in active or s == clicked]
-        # Falling back to all-active when nothing is left keeps "[] = all" tidy.
+        # fall back to all-active when nothing is left
         return [] if set(active) == set(all_substances) or not active else active
 
-    # The Temporal-tab substance dropdown offers exactly the substances active in
-    # the master legend ([] = all). It keeps the current pick when that pick is
-    # still active, otherwise falls back to the first available substance.
+    # the temporal dropdown offers whatever substances are active in the legend
     @app.callback(
         Output("temporal-substance", "options"),
         Output("temporal-substance", "value"),

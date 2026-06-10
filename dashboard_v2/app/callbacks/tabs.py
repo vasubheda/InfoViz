@@ -1,7 +1,3 @@
-"""Detail-view tab switching. The four research-question panels stay mounted at
-all times (so the single figures mega-callback can keep writing to every graph);
-this callback just toggles each panel's visibility via its `style`.
-"""
 from dash import Input, Output
 
 _PANELS = ["panel-overview", "panel-national", "panel-q1", "panel-q3"]
@@ -15,6 +11,6 @@ def register(app, data):
         [Output(p, "style") for p in _PANELS],
         Input("detail-tabs", "active_tab"),
     )
-    def _toggle(active_tab):
+    def toggle(active_tab):
         active = _TAB_TO_PANEL.get(active_tab, "panel-overview")
         return [{} if p == active else {"display": "none"} for p in _PANELS]

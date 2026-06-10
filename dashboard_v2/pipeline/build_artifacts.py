@@ -1,11 +1,3 @@
-"""Pipeline orchestrator.
-
-    python -m pipeline.build_artifacts [--version N]
-
-Runs load -> normalise -> impute -> features -> correlate and writes versioned
-parquet artifacts plus a manifest.json describing the build. Idempotent; never
-mutates the raw inputs.
-"""
 import argparse
 import hashlib
 import json
@@ -16,7 +8,7 @@ from . import config as cfg
 from . import correlate, features, geo, load, normalize
 
 
-def _hash_file(path) -> str:
+def hash_file(path) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
@@ -25,7 +17,7 @@ def _hash_file(path) -> str:
 
 
 def run(version: int = cfg.ARTIFACT_VERSION) -> dict:
-    # 1-3: load, region filter, rename countries, classify substances
+    # load, region filter, rename countries, classify substances
     raw = load.load_raw()
     tables = {}
     for name, df in raw.items():
@@ -33,23 +25,23 @@ def run(version: int = cfg.ARTIFACT_VERSION) -> dict:
         df = normalize.classify_substances(df)
         tables[name] = df
 
-    # 4: geo validation (explicit Country -> NAME lookup, recorded unmatched)
+    # geo validation
     geo_gdf = geo.load_geo()
     all_countries = set()
     for df in tables.values():
         all_countries |= set(df["Country"].dropna().unique())
     geo_join = geo.validate_country_join(all_countries, geo_gdf)
 
-    # 5-6: unify prices then unit names (prices only)
+    # unify prices then unit names (prices only)
     tables["prices"] = normalize.unify_unit_names(
         normalize.unify_prices(tables["prices"].dropna(subset=["Unit"]))
     )
 
-    # 7: imputation + flagging (snapshot-based exact flags)
+    # imputation + flagging
     from . import impute
     tables, impute_stats = impute.impute_all(tables)
 
-    # 8: features
+    # features
     prices = features.add_spreads(tables["prices"])
     purity = tables["purity"]
     seizures = tables["seizures"]
@@ -57,10 +49,10 @@ def run(version: int = cfg.ARTIFACT_VERSION) -> dict:
     combined = features.build_combined(prices, purity, seizures)
     enforcement = features.enforcement_metrics(margin, seizures)
 
-    # 9: within-country lagged correlation ()
+    # within-country lagged correlation
     lag = correlate.lag_correlation(prices, purity, seizures)
 
-    # 10: write artifacts
+    # write artifacts
     out_dir = cfg.clean_version_dir(version)
     out_dir.mkdir(parents=True, exist_ok=True)
     artifacts = {
@@ -71,7 +63,7 @@ def run(version: int = cfg.ARTIFACT_VERSION) -> dict:
     for name, df in artifacts.items():
         df.to_parquet(out_dir / f"{name}.parquet", index=False)
 
-    # persist the geo name lookup so the app never indexes positionally
+    # persist the geo name lookup
     with open(out_dir / "geo_lookup.json", "w") as f:
         json.dump(geo_join, f, indent=2)
 
@@ -80,9 +72,9 @@ def run(version: int = cfg.ARTIFACT_VERSION) -> dict:
         "region": cfg.REGION,
         "substances": cfg.ALL_SUBSTANCE_CATEGORIES,
         "source_hashes": {
-            "prices_xlsx": _hash_file(cfg.PRICES_XLSX),
-            "seizures_xlsx": _hash_file(cfg.SEIZURES_XLSX),
-            "geojson": _hash_file(cfg.GEOJSON_PATH),
+            "prices_xlsx": hash_file(cfg.PRICES_XLSX),
+            "seizures_xlsx": hash_file(cfg.SEIZURES_XLSX),
+            "geojson": hash_file(cfg.GEOJSON_PATH),
         },
         "row_counts": {k: int(len(v)) for k, v in artifacts.items()},
         "imputation": impute_stats,

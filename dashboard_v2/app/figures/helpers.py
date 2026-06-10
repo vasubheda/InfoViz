@@ -1,6 +1,3 @@
-"""Shared figure helpers: empty-state / placeholder figures and the base geo
-layout used by the choropleth maps.
-"""
 import plotly.graph_objects as go
 
 
@@ -14,12 +11,6 @@ def empty_fig(msg: str, height: int = 300) -> go.Figure:
 
 
 def filter_note_fig(height: int = 400) -> go.Figure:
-    """Placeholder shown for cross-country views while a country filter is active.
-
-    These views (regional heatmaps, choropleths) only make sense across all of
-    Europe; rendering them for a hand-picked subset would mislead, so we replace
-    the figure with a short instruction instead.
-    """
     return empty_fig(
         "Clear the country filter (select all countries) to compare across markets.",
         height,

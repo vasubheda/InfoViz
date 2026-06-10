@@ -1,6 +1,3 @@
-"""Feature engineering: price spreads, inland retail-wholesale margins, the
-3-way combined table, and the composite enforcement-priority index.
-"""
 import numpy as np
 import pandas as pd
 
@@ -15,7 +12,6 @@ def add_spreads(prices: pd.DataFrame) -> pd.DataFrame:
 
 
 def inland_margin(prices: pd.DataFrame) -> pd.DataFrame:
-    """Retail-vs-wholesale price gap per (Country, Substance)."""
     retail = (
         prices[prices["LevelOfSale"] == "Retail"]
         .groupby(["Country", "Substance"])["Typical_USD"].mean().reset_index()
@@ -34,11 +30,7 @@ def inland_margin(prices: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_combined(prices, purity, seizures) -> pd.DataFrame:
-    """3-way inner join on [Country, Substance, Year] + attached SubRegion.
-
-    Imputation flags from each source are carried so the app can mark which
-    encoding (price / purity / seizure) of a point rests on imputed data.
-    """
+    # 3-way inner join on country/substance/year, carrying imputation flags
     price_avg = (
         prices.groupby(["Country", "Substance", "Year"])
         .agg(Typical_USD=("Typical_USD", "mean"),
@@ -71,7 +63,7 @@ def build_combined(prices, purity, seizures) -> pd.DataFrame:
     return combined.reset_index(drop=True)
 
 
-def _norm(s: pd.Series) -> pd.Series:
+def norm(s: pd.Series) -> pd.Series:
     mn, mx = s.min(), s.max()
     if mx == mn:
         return pd.Series(0.5, index=s.index)
@@ -79,13 +71,7 @@ def _norm(s: pd.Series) -> pd.Series:
 
 
 def enforcement_metrics(margin: pd.DataFrame, seizures: pd.DataFrame) -> pd.DataFrame:
-    """Composite enforcement-priority index per (Country, Substance).
-
-    Reframed (not a trafficker guide): high score = a market where a high
-    retail-vs-wholesale markup and high street price coincide with comparatively
-    *low* current seizure pressure - i.e. a market that interdiction is not yet
-    reaching. The full table is kept so the app can re-aggregate under filters.
-    """
+    # high score = high markup + high street price + low seizure pressure
     seiz = (
         seizures.groupby(["Country", "Substance"])["Kilograms"].sum().reset_index()
     )
@@ -93,8 +79,8 @@ def enforcement_metrics(margin: pd.DataFrame, seizures: pd.DataFrame) -> pd.Data
     m["Kilograms"] = m["Kilograms"].fillna(0)
     w = cfg.PRIORITY_WEIGHTS
     m["priority_score"] = (
-        _norm(m["RelativeMargin"]) * w["margin"]
-        + _norm(m["Typical_USD_Retail"]) * w["retail"]
-        + (1 - _norm(np.log1p(m["Kilograms"]))) * w["inverse_seizure"]
+        norm(m["RelativeMargin"]) * w["margin"]
+        + norm(m["Typical_USD_Retail"]) * w["retail"]
+        + (1 - norm(np.log1p(m["Kilograms"]))) * w["inverse_seizure"]
     )
     return m.sort_values("priority_score", ascending=False).reset_index(drop=True)

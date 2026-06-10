@@ -1,6 +1,3 @@
-"""Artifact loading. The app reads ONLY the cleaned parquet artifacts produced
-by the pipeline - it never touches raw Excel or recomputes joins at import.
-"""
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -33,19 +30,13 @@ class AppData:
     europe_gdf: gpd.GeoDataFrame
     geo_lookup: dict
     manifest: dict
-    # Outer-joined counterpart to `combined`: built at load (see _build_combined_outer)
-    # so the time-series can show substances with price/purity but no seizure
-    # coverage (e.g. Amphetamines), which the inner-joined `combined` drops.
     combined_outer: pd.DataFrame = None
     substance_color_map: dict = field(default_factory=dict)
     subregion_color_map: dict = field(default_factory=dict)
 
-    # --- convenience accessors ---------------------------------------------
     @property
     def substances(self):
-        # Union across the analytic tables (not just the inner-joined combined),
-        # so substances present in prices/margins but missing seizure coverage
-        # (e.g. Amphetamines) remain selectable for the charts that have them.
+        # union across tables so substances without seizure data still show up
         present = (set(self.combined["Substance"])
                    | set(self.prices["Substance"])
                    | set(self.inland_margin["Substance"]))
@@ -68,15 +59,8 @@ class AppData:
         return sorted(self.prices["SubRegion"].dropna().unique())
 
 
-def _build_combined_outer(prices, purity, seizures) -> pd.DataFrame:
-    """Outer-joined [Country, Substance, Year] frame for the time-series.
-
-    Mirrors the pipeline's inner-joined `build_combined` but joins with
-    how='outer', so a substance present in only some sources (e.g. Amphetamines:
-    price + purity, no seizures) keeps its rows. Metrics absent for a given
-    (Country, Substance, Year) stay NaN - the time-series draws a gap there,
-    not a misleading zero. Imputation flags default to False where missing.
-    """
+def build_combined_outer(prices, purity, seizures) -> pd.DataFrame:
+    # outer join so substances missing from some sources keep their rows
     price_avg = (prices.groupby(["Country", "Substance", "Year"])
                  .agg(Typical_USD=("Typical_USD", "mean"),
                       price_imputed=("Typical_USD_is_imputed", "max"))
@@ -118,8 +102,8 @@ def load_artifacts(version: int = ARTIFACT_VERSION) -> AppData:
     data = AppData(
         europe_gdf=europe_gdf, geo_lookup=geo_lookup, manifest=manifest, **frames,
     )
-    data.combined_outer = _build_combined_outer(data.prices, data.purity,
-                                                 data.seizures)
+    data.combined_outer = build_combined_outer(data.prices, data.purity,
+                                                data.seizures)
     data.substance_color_map = theme.substance_color_map(
         set(data.combined["Substance"]) | set(data.prices["Substance"])
     )

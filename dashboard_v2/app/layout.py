@@ -1,6 +1,3 @@
-"""App layout assembly. Reframed throughout to a law-enforcement / policy voice
-(research questions from the proposal drive each panel).
-"""
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 
@@ -8,29 +5,25 @@ from .components.stores import make_stores
 from .figures.maps import enforcement_map
 
 
-def _loading(component):
-    """Wrap a component in a Dash loading overlay for recompute feedback."""
+def loading(component):
     return dcc.Loading(component, type="default", color="#495057")
 
 
-def _graph(graph_id, hint=None, displaymodebar=True, figure=None, loading=True):
+def make_graph(graph_id, hint=None, displaymodebar=True, figure=None, with_loading=True):
     children = []
     if hint:
         children.append(html.Small(hint, className="text-muted d-block mb-1"))
     graph_kwargs = {"id": graph_id, "config": {"displayModeBar": displaymodebar}}
-    # Seed an initial figure so a Patch callback has a figure to patch into
-    # (the map is drawn once here; clicks only patch its outline trace).
+    # seed an initial figure so a Patch callback has something to patch
     if figure is not None:
         graph_kwargs["figure"] = figure
-    graph = dcc.Graph(**graph_kwargs)
-    # loading=False skips the dcc.Loading overlay - used for the enforcement map,
-    # whose clicks only Patch the outline trace; the overlay would otherwise
-    # flash a spinner over the whole map on every selection.
-    children.append(_loading(graph) if loading else graph)
+    g = dcc.Graph(**graph_kwargs)
+    # skip the spinner overlay for the map so it doesn't flash on every click
+    children.append(loading(g) if with_loading else g)
     return children
 
 
-def _card(title, body, md=6, className="detail-card", id=None):
+def card(title, body, md=6, className="detail-card", id=None):
     col_kwargs = {"md": md}
     if id is not None:
         col_kwargs["id"] = id
@@ -44,10 +37,9 @@ def build_layout(data):
     years = list(range(data.year_min, data.year_max + 1))
 
     return dbc.Container([
-        # Master-detail body: a sticky selection hub on the left, the
-        # research-question-tabbed analytical charts on the right.
+        # sticky selection hub on the left, tabbed charts on the right
         dbc.Row([
-            # ---- MASTER (left, sticky): the selection hub ----
+            # master panel (left, sticky)
             dbc.Col(dbc.Card([
                 dbc.CardHeader(dbc.Row([
                     dbc.Col([
@@ -69,16 +61,10 @@ def build_layout(data):
                     ], width="auto", className="d-flex align-items-center"),
                 ], className="g-2 justify-content-between flex-nowrap")),
                 dbc.CardBody([
-                    # The brushing-info span is still written to by the selection
-                    # callback, so it stays in the DOM but is hidden (the visible
-                    # "Linked selection: …" hint was removed).
+                    # hidden but the selection callback still writes to it
                     html.Span(id="brushing-info", style={"display": "none"}),
                     html.H6("Year range", className="master-heading"),
-                    # Two dropdowns (From / To) instead of a RangeSlider: every
-                    # combination - including a single year (From == To) - is
-                    # selectable, with none of the Dash-4 Radix-slider
-                    # thumb-overlap quirks. The figures callback normalises the
-                    # pair so order never matters.
+                    # two dropdowns instead of a range slider so single years work too
                     dbc.Row([
                         dbc.Col([
                             html.Label("From", className="small text-muted mb-1"),
@@ -106,13 +92,13 @@ def build_layout(data):
                                   className="text-muted small"),
                     ], className="d-flex justify-content-between "
                                  "align-items-baseline mt-3 mb-1"),
-                    *_graph("enforcement-map",
-                            figure=enforcement_map(data, {}), loading=False),
+                    *make_graph("enforcement-map",
+                                figure=enforcement_map(data, {}), with_loading=False),
                     html.H6("Substances", className="master-heading mt-3"),
                     html.Div(id="substance-legend",
                              className="d-flex flex-wrap mb-2"),
-                    # Total-seizures indicator (relocated from the Overview tab).
-                    _loading(html.Div(id="kpi-panel", className="mt-3")),
+                    # total-seizures indicator
+                    loading(html.Div(id="kpi-panel", className="mt-3")),
                 ]),
             ], id="master-card"), id="master-col", md=4,
                 style={"position": "sticky", "top": "1rem",
@@ -121,11 +107,7 @@ def build_layout(data):
                        # master card aligns with the detail section's tabs.
                        "paddingTop": "1rem"}),
 
-            # ---- DETAIL (right): research-question tabs ----
-            # The tab bar is only a selector; every panel below stays mounted so
-            # the single figures mega-callback (writes all graphs at once) and
-            # the brushing callbacks keep working. Visibility is toggled in
-            # callbacks/tabs.py via each panel's `style`.
+            # detail panels (right) - all stay mounted, visibility toggled in callbacks/tabs.py
             dbc.Col(id="detail-col", md=8, style={"transition": "all 0.3s ease"}, children=[
                 html.Div([
                     dbc.Button("❯", id="sidebar-show-btn", color="secondary", size="sm", 
@@ -140,50 +122,42 @@ def build_layout(data):
                         ]), style={"flexGrow": 1}
                     )
                 ], className="mb-3 d-flex align-items-center",
-                   # Keep the tab bar in view while the panel content scrolls.
-                   # Stick flush to the viewport top (top:0) with an opaque
-                   # background and top padding, so no panel content can scroll
-                   # into view above the tabs. The 1rem padding visually keeps
-                   # the tabs aligned with the sticky master panel's top.
+                   # keep the tab bar pinned to the top while content scrolls
                    style={"position": "sticky", "top": 0, "zIndex": 1020,
                           "backgroundColor": "#f8f9fa",
                           "paddingTop": "1rem"}),
 
-                # --- Panel Overview: substance bars + per-metric time series ---
+                # overview panel: substance bars + time series
                 html.Div(id="panel-overview", children=[
                     dbc.Row([
-                        dbc.Col(_graph("ki-seizures-bar", displaymodebar=False),
+                        dbc.Col(make_graph("ki-seizures-bar", displaymodebar=False),
                                 md=4),
-                        dbc.Col(_graph("ki-price-bar", displaymodebar=False),
+                        dbc.Col(make_graph("ki-price-bar", displaymodebar=False),
                                 md=4),
-                        dbc.Col(_graph("ki-purity-bar", displaymodebar=False),
+                        dbc.Col(make_graph("ki-purity-bar", displaymodebar=False),
                                 md=4),
                     ], className="g-2 mb-2"),
-                    # Hidden when a single year is selected (no trend to draw);
-                    # visibility is toggled in callbacks/figures.py.
+                    # hidden for a single year (no trend), toggled in callbacks/figures.py
                     html.Div(id="ts-row", children=dbc.Row([
-                        dbc.Col(_graph("ts-seizures", displaymodebar=False), md=4),
-                        dbc.Col(_graph("ts-price",    displaymodebar=False), md=4),
-                        dbc.Col(_graph("ts-purity",   displaymodebar=False), md=4),
+                        dbc.Col(make_graph("ts-seizures", displaymodebar=False), md=4),
+                        dbc.Col(make_graph("ts-price",    displaymodebar=False), md=4),
+                        dbc.Col(make_graph("ts-purity",   displaymodebar=False), md=4),
                     ], className="g-2 mb-2")),
-                    # Subregion breakdown: the bars/series above aggregate across
-                    # all of Europe; these split the same metrics by subregion.
-                    # Always shown (they work for a single year too).
+                    # same metrics split by subregion
                     dbc.Row([
-                        dbc.Col(_graph("sr-seizures", displaymodebar=False),
+                        dbc.Col(make_graph("sr-seizures", displaymodebar=False),
                                 md=4),
-                        dbc.Col(_graph("sr-price", displaymodebar=False),
+                        dbc.Col(make_graph("sr-price", displaymodebar=False),
                                 md=4),
-                        dbc.Col(_graph("sr-purity", displaymodebar=False),
+                        dbc.Col(make_graph("sr-purity", displaymodebar=False),
                                 md=4),
                     ], className="g-2 mb-2"),
                 ]),
 
-                # --- Panel National: a metric mapped over time, then the
-                # retail/wholesale markup map below it ---
+                # national panel: metric-over-time map then the markup map
                 html.Div(id="panel-national", children=[
                     dbc.Row([
-                        _card(["Metric by country over time",
+                        card(["Metric by country over time",
                                html.I(className="bi bi-info-circle text-muted "
                                       "ms-1", id="temporal-info",
                                       style={"cursor": "help"}),
@@ -226,13 +200,12 @@ def build_layout(data):
                                ], className="mb-2"),
                                html.Div(id="temporal-highlights",
                                         className="mb-3"),
-                               _loading(dcc.Graph(id="temporal-maps"))],
+                               loading(dcc.Graph(id="temporal-maps"))],
                               md=12),
                     ], className="mb-4"),
-                    # Profitability: retail-wholesale markup map, below the
-                    # over-time metric map.
+                    # markup map below the over-time map
                     dbc.Row([
-                        _card([" Highest retail-wholesale markup by country ",
+                        card([" Highest retail-wholesale markup by country ",
                                html.I(className="bi bi-info-circle text-muted "
                                       "ms-1", id="q2-info",
                                       style={"cursor": "help"}),
@@ -249,16 +222,15 @@ def build_layout(data):
                                    target="q2-info", placement="bottom")],
                               [html.Div(id="margin-highlights",
                                         className="mb-3"),
-                               *_graph("margin-map")],
+                               *make_graph("margin-map")],
                               md=12),
                     ], className="mb-4"),
                 ]),
 
-                # --- Panel : seizures -> market ---
-                # The two cards are stacked full-width (one above the other).
+                # seizures -> market panel, two stacked cards
                 html.Div(id="panel-q1", children=[
                     dbc.Row([
-                        _card([" Do seizures move the market? "
+                        card([" Do seizures move the market? "
                                "(within-country, +1yr lag) ",
                                html.I(className="bi bi-info-circle text-muted "
                                       "ms-1", id="q1-lag-info",
@@ -270,14 +242,14 @@ def build_layout(data):
                                    " Select a country to see its own "
                                    "correlations.",
                                    target="q1-lag-info", placement="bottom")],
-                              [_loading(dcc.Graph(id="lag-correlation-chart",
-                                         config={"displayModeBar": False})),
+                              [loading(dcc.Graph(id="lag-correlation-chart",
+                                        config={"displayModeBar": False})),
                                html.Div(id="lag-limitations",
                                         className="small text-muted mt-2")],
                               md=12),
                     ], className="mb-3"),
                     dbc.Row([
-                        _card(" Correlation detail by substance",
+                        card(" Correlation detail by substance",
                               [dbc.Row([
                                   dbc.Col(dcc.Dropdown(id="x-axis", clearable=False,
                                           value="Kilograms", className="small",
@@ -290,17 +262,17 @@ def build_layout(data):
                                                    {"label": "Purity (%)", "value": "Typical"},
                                                    {"label": "Kilograms seized", "value": "Kilograms"}]), md=6),
                               ], className="mb-2"),
-                               _loading(dcc.Graph(id="regression-chart")),
+                               loading(dcc.Graph(id="regression-chart")),
                                html.Div(id="regression-stats",
                                         className="mt-2 small text-muted")],
                               md=12),
                     ], className="mb-4"),
                 ]),
 
-                # --- Panel : cross-border spillover ---
+                # cross-border spillover panel
                 html.Div(id="panel-q3", children=[
                     dbc.Row([
-                        _card([
+                        card([
                             " Where to focus border control: best "
                             "cross-border wholesale→retail arbitrage ",
                             html.I(className="bi bi-info-circle text-muted ms-1",
@@ -317,18 +289,13 @@ def build_layout(data):
                                 "average across the range.",
                                 target="q3-info", placement="bottom"),
                         ],
-                              [# Priority gaps surfaced at the top of the body.
+                              [# priority gaps at the top of the body
                                html.Div(id="border-arbitrage-gaps",
                                         className="mb-3"),
-                               html.Div(_loading(dcc.Graph(id="market-flow-map")),
+                               html.Div(loading(dcc.Graph(id="market-flow-map")),
                                         id="q3-flow-wrap",
                                         style={"display": "none"}),
-                               # Year picker: the arbitrage prices/seizures are
-                               # a snapshot of this single year (not averaged
-                               # across the range). Bounds track the global
-                               # From/To range (see _q3_year_bounds in
-                               # callbacks/figures.py). Shown in both modes,
-                               # sat below the per-substance flow map.
+                               # single-year snapshot picker, bounds track the global range
                                html.Div([
                                    html.Label("Year", className="small "
                                               "text-muted mb-1"),
@@ -336,11 +303,11 @@ def build_layout(data):
                                               included=False,
                                               tooltip={"placement": "bottom"}),
                                ], id="q3-year-wrap", className="mb-3"),
-                               _loading(dcc.Graph(id="border-arbitrage-chart"))],
+                               loading(dcc.Graph(id="border-arbitrage-chart"))],
                               md=8, id="q3-chart-col"),
-                        _card("Selected country & neighbours",
-                              _graph("neighbour-map", displaymodebar=False),
-                              md=4, id="q3-neighbour-col"),
+                        card("Selected country & neighbours",
+                             make_graph("neighbour-map", displaymodebar=False),
+                             md=4, id="q3-neighbour-col"),
                     ], className="mb-4"),
                 ]),
             ]),
@@ -348,9 +315,7 @@ def build_layout(data):
 
         *make_stores(),
 
-        # Fixed attribution bar, always visible; detail/master content scrolls
-        # beneath it (the container's bottom padding keeps content from hiding
-        # permanently behind it).
+        # fixed attribution bar at the bottom
         html.Div(
             html.P("Data: UNODC World Drug Report 2019-2023 "
                    "Built with Dash/Plotly Palettes: Paul Tol Muted "

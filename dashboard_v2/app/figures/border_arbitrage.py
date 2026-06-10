@@ -1,24 +1,3 @@
-"""Cross-border wholesale->retail arbitrage for a single selected country.
-
-For the selected country C and each bordering neighbour N, two smuggling plays
-exist per substance:
-
-  * IMPORT into C : buy wholesale in N, sell retail in C   margin = C_retail - N_wholesale
-  * EXPORT from C : buy wholesale in C, sell retail in N   margin = N_retail - C_wholesale
-
-We surface, per (neighbour, substance), the more profitable of the two
-directions as a signed diverging bar (left = import incentive into C, right =
-export incentive out of C). This shows border patrol which shared borders carry
-the strongest smuggling pull and in which direction - the kind of cross-market
-gap a purely domestic retail-wholesale markup misses.
-
-Land-border adjacency is a hard-coded lookup (``_LAND_BORDERS``) using the
-geojson ``NAME`` spelling. It was generated once from the geojson geometry (a
-2 km buffer absorbed coastline/topology gaps); baking it in avoids running a
-CRS reprojection + buffer + spatial-intersection over all of Europe on every
-Q3 interaction. Names that carry no smuggling-relevant land border (islands:
-Cyprus, Iceland, Malta; enclaves with none in-dataset: Gibraltar) map to [].
-"""
 import math
 
 import plotly.graph_objects as go
@@ -27,7 +6,7 @@ from .. import theme
 from . import helpers
 from .cache import memoize_figure
 
-# Symmetric land-border adjacency, geojson NAME spelling. See module docstring.
+# land-border adjacency, geojson NAME spelling
 _LAND_BORDERS = {
     "Albania": ["Greece", "Montenegro", "Serbia",
                 "The former Yugoslav Republic of Macedonia"],
@@ -90,51 +69,37 @@ _LAND_BORDERS = {
 
 
 def neighbours_of(data, country):
-    """Land neighbours of ``country`` that also appear in the price data.
-
-    Adjacency is the baked-in ``_LAND_BORDERS`` table; the price-data filter is
-    applied at call time so the result still tracks whatever countries are
-    actually priced (identical behaviour to the old geometry-derived version).
-    """
     priced = set(data.prices["Country"].unique())
     return sorted(n for n in _LAND_BORDERS.get(country, []) if n in priced)
 
 
-def _mean_price(prices, country, substance, level):
+def mean_price(prices, country, substance, level):
     sel = prices[(prices["Country"] == country)
                  & (prices["Substance"] == substance)
                  & (prices["LevelOfSale"] == level)]
     return sel["Typical_USD"].mean() if len(sel) else None
 
 
-def _seized_tons(seizures, country, substance):
+def seized_tons(seizures, country, substance):
     sel = seizures[(seizures["Country"] == country)
                    & (seizures["Substance"] == substance)]
     return sel["Kilograms"].sum() / 1000 if len(sel) else 0.0
 
 
-def _bearing(origin, dest):
-    """Clockwise-from-north angle (deg) of origin->dest on the Mercator plane.
-
-    The arrowhead is a triangle-up marker (points north at angle 0) and Plotly's
-    marker ``angle`` rotates clockwise, so this aligns the head with the drawn
-    line. Mercator y uses the standard log-tangent so the angle matches the
-    straight segment the map draws between the two points (which is itself
-    projected), not the great-circle bearing.
-    """
+def bearing(origin, dest):
+    # clockwise-from-north angle so the arrowhead lines up with the segment
     (lon0, lat0), (lon1, lat1) = origin, dest
 
-    def _merc_y(lat):
+    def merc_y(lat):
         return math.degrees(math.log(math.tan(math.pi / 4
                                                + math.radians(lat) / 2)))
 
     dx = lon1 - lon0
-    dy = _merc_y(lat1) - _merc_y(lat0)
-    # atan2(dx, dy): 0 = due north, increasing clockwise (east positive).
+    dy = merc_y(lat1) - merc_y(lat0)
     return (math.degrees(math.atan2(dx, dy))) % 360
 
 
-def _hex_to_rgba(hex_color, alpha):
+def hex_to_rgba(hex_color, alpha):
     h = hex_color.lstrip("#")
     if len(h) != 6:
         return hex_color
@@ -142,7 +107,7 @@ def _hex_to_rgba(hex_color, alpha):
     return f"rgba({r},{g},{b},{alpha:.2f})"
 
 
-def _tercile_thresholds(values):
+def tercile_thresholds(values):
     s = sorted(values)
     if len(s) < 3:
         return (s[0] if s else 0), (s[-1] if s else 0)
@@ -151,15 +116,7 @@ def _tercile_thresholds(values):
     return lo, hi
 
 
-def _compute_rows(data, filtered_prices, filtered_seizures, country, substances):
-    """Build enriched arbitrage rows for ``country``.
-
-    Returns ``None`` (no country selected), ``"no_neigh"`` (no priced
-    neighbours), or a list of row dicts each carrying the best margin, signed
-    x-position, corridor seizure tonnage (used only for the priority-gap flag),
-    priority flag, and a hover string. Shared by the chart and the gap list so
-    both apply identical thresholds.
-    """
+def compute_rows(data, filtered_prices, filtered_seizures, country, substances):
     if not country:
         return None
     neigh = neighbours_of(data, country)
@@ -170,10 +127,10 @@ def _compute_rows(data, filtered_prices, filtered_seizures, country, substances)
     rows = []
     for n in neigh:
         for s in subs:
-            c_retail = _mean_price(filtered_prices, country, s, "Retail")
-            c_whole = _mean_price(filtered_prices, country, s, "Wholesale")
-            n_retail = _mean_price(filtered_prices, n, s, "Retail")
-            n_whole = _mean_price(filtered_prices, n, s, "Wholesale")
+            c_retail = mean_price(filtered_prices, country, s, "Retail")
+            c_whole = mean_price(filtered_prices, country, s, "Wholesale")
+            n_retail = mean_price(filtered_prices, n, s, "Retail")
+            n_whole = mean_price(filtered_prices, n, s, "Wholesale")
 
             import_margin = (c_retail - n_whole
                              if c_retail is not None and n_whole is not None else None)
@@ -197,8 +154,8 @@ def _compute_rows(data, filtered_prices, filtered_seizures, country, substances)
             if margin is None:
                 continue
 
-            corridor_t = (_seized_tons(filtered_seizures, country, s)
-                          + _seized_tons(filtered_seizures, n, s))
+            corridor_t = (seized_tons(filtered_seizures, country, s)
+                          + seized_tons(filtered_seizures, n, s))
             rows.append({"label": f"{n} + {s}", "signed": signed, "margin": margin,
                          "substance": s, "direction": direction,
                          "buy": buy, "sell": sell, "corridor_t": corridor_t,
@@ -207,12 +164,10 @@ def _compute_rows(data, filtered_prices, filtered_seizures, country, substances)
     if not rows:
         return rows
 
-    # Priority = high margin (top tercile) AND low seizures (bottom tercile).
-    # Seizure pressure is no longer encoded in bar opacity or shown in the hover
-    # - it only feeds the priority-gap flag.
+    # priority = top-tercile margin and bottom-tercile seizures
     pressures = [r["corridor_t"] for r in rows]
-    _, margin_hi = _tercile_thresholds([r["margin"] for r in rows])
-    seiz_lo, _ = _tercile_thresholds(pressures)
+    _, margin_hi = tercile_thresholds([r["margin"] for r in rows])
+    seiz_lo, _ = tercile_thresholds(pressures)
     for r in rows:
         r["priority"] = r["margin"] >= margin_hi and r["corridor_t"] <= seiz_lo
         r["hover"] = (
@@ -226,13 +181,8 @@ def _compute_rows(data, filtered_prices, filtered_seizures, country, substances)
 
 @memoize_figure()
 def border_arbitrage(data, filtered_prices, filtered_seizures, country, substances):
-    """Diverging per-(neighbour, substance) best-arbitrage bars for ``country``.
-
-    Bar length = best smuggling margin; direction = import (left) / export
-    (right). Priority gaps (high margin AND low seizures) are outlined with ⚑.
-    """
-    rows = _compute_rows(data, filtered_prices, filtered_seizures,
-                         country, substances)
+    rows = compute_rows(data, filtered_prices, filtered_seizures,
+                        country, substances)
     if rows is None:
         return helpers.empty_fig(
             "Select a single country (click it on the map) to see its "
@@ -245,7 +195,7 @@ def border_arbitrage(data, filtered_prices, filtered_seizures, country, substanc
             f"No matched wholesale/retail price pairs across {country}'s borders "
             "for the current filters.", 420)
 
-    # Sort by absolute opportunity so the strongest borders are most prominent.
+    # sort so the strongest borders stand out
     rows.sort(key=lambda r: r["margin"])
     marker_colors = [
         data.substance_color_map.get(r["substance"], theme.TOL_MUTED[0])
@@ -276,7 +226,6 @@ def border_arbitrage(data, filtered_prices, filtered_seizures, country, substanc
         xaxis=dict(gridcolor=theme.GRID, zeroline=True),
         yaxis=dict(gridcolor=theme.GRID, tickfont=dict(size=10)),
         plot_bgcolor=theme.PLOT_BG, showlegend=False)
-    # Key, above the plot (below the title).
     fig.add_annotation(
         xref="paper", yref="paper", x=0, y=1.07, showarrow=False,
         font=dict(size=11, color="#555"), xanchor="left", yanchor="top",
@@ -287,15 +236,10 @@ def border_arbitrage(data, filtered_prices, filtered_seizures, country, substanc
 
 @memoize_figure()
 def priority_gap_list(data, filtered_prices, filtered_seizures, country, substances):
-    """Ranked HTML list of the flagged priority-gap corridors (for the report).
-
-    Returns Dash html components mirroring the ⚑ bars: high-margin,
-    low-seizure (neighbour, substance) corridors, ordered by margin.
-    """
     from dash import html
 
-    rows = _compute_rows(data, filtered_prices, filtered_seizures,
-                         country, substances)
+    rows = compute_rows(data, filtered_prices, filtered_seizures,
+                        country, substances)
     if not rows or rows in (None, "no_neigh"):
         return html.Small(
             "Select a single country to list its priority border gaps.",
@@ -333,40 +277,24 @@ def priority_gap_list(data, filtered_prices, filtered_seizures, country, substan
     ], className="small")
 
 
-# Cap on the ranked corridor bars. The map draws only the single best corridor
-# per substance (the headline subset of these bars).
 _MARKET_TOP_N = 25
 
 
-def _market_rows(filtered_prices, filtered_seizures, pool, substances, cap=None):
-    """Cross-market arbitrage corridors across a country pool (no borders).
-
-    For each substance the cheapest-wholesale country in the pool is the single
-    origin; every *other* pooled country whose retail price beats that origin's
-    wholesale defines a corridor (origin → that country) with spread
-    ``retail - min_wholesale``. ``pool`` non-empty restricts to that subset;
-    empty means every priced country. Returns enriched rows (opacity inverse to
-    corridor seizure pressure, priority flag, hover string) ranked
-    strongest-first; ``cap`` (e.g. ``_MARKET_TOP_N``) truncates to that many,
-    ``None`` keeps all. Each substance's single best corridor is tagged
-    ``r["is_best"]`` (those are what the flow map draws) - note the cap can drop
-    a low-spread substance's best corridor, so the flow map passes ``cap=None``.
-    Shared by the flow map, the bar chart, and the gap list.
-    """
+def market_rows(filtered_prices, filtered_seizures, pool, substances, cap=None):
     priced = set(filtered_prices["Country"].unique())
     countries = sorted(set(pool) & priced) if pool else sorted(priced)
     subs = [s for s in substances if s != "Other"]
     rows = []
     for s in subs:
-        retail = {c: _mean_price(filtered_prices, c, s, "Retail") for c in countries}
-        whole = {c: _mean_price(filtered_prices, c, s, "Wholesale") for c in countries}
+        retail = {c: mean_price(filtered_prices, c, s, "Retail") for c in countries}
+        whole = {c: mean_price(filtered_prices, c, s, "Wholesale") for c in countries}
         retail = {c: v for c, v in retail.items() if v is not None}
         whole = {c: v for c, v in whole.items() if v is not None}
         if not retail or not whole:
             continue
         buy_c = min(whole, key=whole.get)
         wh = whole[buy_c]
-        # One corridor per retail destination that clears the origin wholesale.
+        # one corridor per retail destination that clears the origin wholesale
         sub_rows = []
         for sell_c, rt in retail.items():
             if sell_c == buy_c:
@@ -374,8 +302,8 @@ def _market_rows(filtered_prices, filtered_seizures, pool, substances, cap=None)
             margin = rt - wh
             if margin <= 0:
                 continue
-            corridor_t = (_seized_tons(filtered_seizures, buy_c, s)
-                          + _seized_tons(filtered_seizures, sell_c, s))
+            corridor_t = (seized_tons(filtered_seizures, buy_c, s)
+                          + seized_tons(filtered_seizures, sell_c, s))
             sub_rows.append({"substance": s, "margin": margin, "buy_c": buy_c,
                              "sell_c": sell_c, "rt": rt, "wh": wh,
                              "corridor_t": corridor_t})
@@ -388,12 +316,11 @@ def _market_rows(filtered_prices, filtered_seizures, pool, substances, cap=None)
     for r in rows:
         r.setdefault("is_best", False)
 
-    # Opacity inverse to corridor seizure pressure; priority = high margin (top
-    # tercile) AND low seizures (bottom tercile). Mirrors _compute_rows.
+    # opacity inverse to seizure pressure; priority = high margin, low seizures
     pressures = [r["corridor_t"] for r in rows]
     p_min, p_span = min(pressures), (max(pressures) - min(pressures)) or 1.0
-    _, margin_hi = _tercile_thresholds([r["margin"] for r in rows])
-    seiz_lo, _ = _tercile_thresholds(pressures)
+    _, margin_hi = tercile_thresholds([r["margin"] for r in rows])
+    seiz_lo, _ = tercile_thresholds(pressures)
     for r in rows:
         norm = (r["corridor_t"] - p_min) / p_span
         r["alpha"] = 1.0 - 0.7 * norm
@@ -416,15 +343,8 @@ def _market_rows(filtered_prices, filtered_seizures, pool, substances, cap=None)
 @memoize_figure()
 def market_flow_map(data, filtered_prices, filtered_seizures, pool, substances,
                     height=620):
-    """Flow map of the single best arbitrage corridor per substance.
-
-    One arrow per substance: from the cheapest-wholesale origin to the
-    priciest-retail destination in the pool, coloured by substance, with the
-    arrowhead rotated to point along the corridor. A faint grey base shows the
-    pooled countries.
-    """
-    rows = _market_rows(filtered_prices, filtered_seizures, pool, substances,
-                        cap=None)
+    rows = market_rows(filtered_prices, filtered_seizures, pool, substances,
+                       cap=None)
     arrows = [r for r in rows if r["is_best"]]
     if not arrows:
         return helpers.base_geo_layout(
@@ -437,7 +357,7 @@ def market_flow_map(data, filtered_prices, filtered_seizures, pool, substances,
     pts = {n: (rp.x, rp.y) for n, rp in
            zip(gdf["NAME"], gdf.geometry.representative_point())}
 
-    # Faint base: the pooled countries, so arrows read against a map.
+    # faint base so arrows read against a map
     base = gdf[gdf["NAME"].isin(countries)]
     fig = go.Figure(go.Choropleth(
         geojson=base.geometry.__geo_interface__, locations=base.index,
@@ -454,16 +374,17 @@ def market_flow_map(data, filtered_prices, filtered_seizures, pool, substances,
             lon=[o[0], dst[0]], lat=[o[1], dst[1]], mode="lines",
             line=dict(width=3, color=color), opacity=0.85,
             hoverinfo="skip", showlegend=False))
-        # Destination marker = arrowhead; origin marker = small open dot.
+        # origin dot
         fig.add_trace(go.Scattergeo(
             lon=[o[0]], lat=[o[1]], mode="markers",
             marker=dict(size=6, color=color, opacity=0.6,
                         line=dict(width=1, color="white")),
             hoverinfo="skip", showlegend=False))
+        # destination arrowhead
         fig.add_trace(go.Scattergeo(
             lon=[dst[0]], lat=[dst[1]], mode="markers",
             marker=dict(size=13, color=color, symbol="triangle-up",
-                        angle=_bearing(o, dst),
+                        angle=bearing(o, dst),
                         line=dict(width=1, color="white")),
             name=r["substance"], customdata=[r["hover"]],
             hovertemplate="%{customdata}", showlegend=True))
@@ -483,18 +404,8 @@ def market_flow_map(data, filtered_prices, filtered_seizures, pool, substances,
 @memoize_figure()
 def market_arbitrage(data, filtered_prices, filtered_seizures, pool, substances,
                      cap=_MARKET_TOP_N):
-    """Ranked cross-market arbitrage corridors across a selected country pool.
-
-    Used when multiple/all countries are selected (no single anchor): one bar
-    per (substance, origin → destination) corridor, ranked by spread and capped
-    at the top ``cap`` (defaults to 25). Bars whose corridor is
-    the best for its substance - i.e. the ones drawn as arrows on the flow map
-    above - carry a ▸ marker. Same visual language as the single-country chart
-    (hue = substance, opacity = corridor seizure pressure, ⚑ outline = priority
-    gap).
-    """
-    rows = _market_rows(filtered_prices, filtered_seizures, pool, substances,
-                        cap=cap)
+    rows = market_rows(filtered_prices, filtered_seizures, pool, substances,
+                       cap=cap)
     if not rows:
         return helpers.empty_fig(
             "No matched wholesale/retail price pairs for the current "
@@ -503,10 +414,10 @@ def market_arbitrage(data, filtered_prices, filtered_seizures, pool, substances,
     priced = set(filtered_prices["Country"].unique())
     n_countries = len(set(pool) & priced) if pool else len(priced)
 
-    marker_colors = [_hex_to_rgba(
+    marker_colors = [hex_to_rgba(
         data.substance_color_map.get(r["substance"], theme.TOL_MUTED[0]),
         r["alpha"]) for r in rows]
-    # Bars drawn bottom-up, so reverse to put the strongest spread on top.
+    # bars drawn bottom-up, reverse so strongest is on top
     rows = rows[::-1]
 
     fig = go.Figure(go.Bar(
@@ -535,9 +446,6 @@ def market_arbitrage(data, filtered_prices, filtered_seizures, pool, substances,
         xaxis=dict(gridcolor=theme.GRID, zeroline=True),
         yaxis=dict(gridcolor=theme.GRID, tickfont=dict(size=10)),
         plot_bgcolor=theme.PLOT_BG, showlegend=False)
-    # Key, above the plot and wrapped across two lines so it never clips at the
-    # plot's right edge (the old single line overflowed). The extra top margin
-    # gives the title + this two-line caption room.
     fig.add_annotation(
         xref="paper", yref="paper", x=0, y=1.07, showarrow=False,
         font=dict(size=11, color="#555"), xanchor="left", yanchor="top",
@@ -552,16 +460,11 @@ def market_arbitrage(data, filtered_prices, filtered_seizures, pool, substances,
 @memoize_figure()
 def market_gap_list(data, filtered_prices, filtered_seizures, pool, substances,
                     cap=_MARKET_TOP_N):
-    """Ranked HTML list of the flagged priority market spreads (for the report).
-
-    ``cap`` matches the corridor bar chart's cap so the listed priority gaps are
-    exactly those among the displayed corridors.
-    """
     import dash_bootstrap_components as dbc
     from dash import html
 
-    rows = _market_rows(filtered_prices, filtered_seizures, pool, substances,
-                        cap=cap)
+    rows = market_rows(filtered_prices, filtered_seizures, pool, substances,
+                       cap=cap)
     if not rows:
         return html.Small(
             "Select countries to list cross-market arbitrage spreads.",
@@ -606,7 +509,6 @@ def market_gap_list(data, filtered_prices, filtered_seizures, pool, substances,
 
 @memoize_figure()
 def neighbour_map(data, country):
-    """Small choropleth highlighting the selected country and its neighbours."""
     if not country:
         return helpers.base_geo_layout(
             helpers.empty_fig("Select a single country", 420), right_margin=10)

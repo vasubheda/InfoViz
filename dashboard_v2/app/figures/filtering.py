@@ -1,10 +1,3 @@
-"""Single place that turns (global filters + selection state) into filtered
-frames. Replaces the duplicated filter_df/apply_brush blocks in the old app.
-
-Selection state is the canonical brushing dict held in the dcc.Store:
-    {country, countries: [...], substance, year, subregion, region}
-Any subset of keys may be present / None.
-"""
 from dataclasses import dataclass
 
 
@@ -14,15 +7,14 @@ class Filters:
     year_range: tuple
 
 
-def _empty_selection() -> dict:
+def empty_selection() -> dict:
     return {"country": None, "countries": None, "substance": None,
             "year": None, "subregion": None}
 
 
 def apply_filters(df, filters: Filters, selection: dict | None,
                   year_col="Year", substance_col="Substance"):
-    """Apply global substance/year filters then brushing selection to a frame."""
-    selection = selection or _empty_selection()
+    selection = selection or empty_selection()
     out = df[
         df[substance_col].isin(filters.substances)
         & (df[substance_col] != "Other")

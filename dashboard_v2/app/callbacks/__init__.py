@@ -1,4 +1,3 @@
-"""Register all callback groups against the Dash app."""
 from . import figures, selection, tabs, zoom, sidebar
 
 

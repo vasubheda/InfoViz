@@ -1,4 +1,3 @@
-"""Multivariate views: per-substance regression facets ()."""
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -13,7 +12,6 @@ LABELS = {"Typical_USD": "Price (USD/g)", "Typical": "Purity (%)",
 
 @memoize_figure()
 def regression_facets(data, filtered_combined, x_axis, y_axis):
-    """Per-substance scatter + OLS line; returns (figure, stats_children)."""
     from dash import html
     subs = sorted(s for s in filtered_combined["Substance"].unique() if s != "Other")
     if len(subs) == 0 or len(filtered_combined) == 0:

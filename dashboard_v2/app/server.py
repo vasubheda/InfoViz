@@ -1,14 +1,9 @@
-"""Dash app entrypoint. Exposes `server` for gunicorn (see Procfile).
-
-Fails fast with a clear message if the cleaned artifacts are missing.
-"""
 import os
 import warnings
 
 import dash
 
-# Plotly Express emits a pandas groupby FutureWarning for single-element colour
-# groups; it does not affect output. Silence it for clean logs.
+# silence a noisy plotly futurewarning
 warnings.filterwarnings("ignore", category=FutureWarning, module="plotly")
 import dash_bootstrap_components as dbc
 
@@ -20,8 +15,7 @@ DATA = load_artifacts()
 
 app = dash.Dash(__name__, external_stylesheets=[
                     dbc.themes.BOOTSTRAP,
-                    # Bootstrap Icons (the `bi bi-*` glyphs used for the info
-                    # tooltip icons and the Q2 insight banner).
+                    # bootstrap icons for the info glyphs
                     "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/"
                     "font/bootstrap-icons.min.css",
                 ],

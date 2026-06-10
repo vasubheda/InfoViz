@@ -1,12 +1,10 @@
-"""Time-series line charts (seizures, price, purity) stacked as facets that
-share one legend, with imputation-aware markers."""
 import plotly.graph_objects as go
 
 from .. import theme
 from . import helpers
 from .cache import memoize_figure
 
-# (column, transform, y-axis label, imputed-flag column, aggregation)
+# column, transform, label, imputed-flag column, aggregation
 METRICS = [
     ("Kilograms", lambda x: x / 1000, "Seizures (t)", "seizure_imputed", "sum"),
     ("Typical_USD", lambda x: x, "Average Price (USD/g)", "price_imputed", "mean"),
@@ -16,12 +14,6 @@ METRICS = [
 
 @memoize_figure()
 def timeseries_single(data, filtered_combined, selection, metric_index, height=260):
-    """Animated line chart for one metric - lines draw left-to-right year by year.
-
-    Each Plotly frame reveals one additional year so the built-in Play button
-    progressively draws the lines. The final frame (all years visible) is also
-    the initial data, so the chart renders fully on load and replays on demand.
-    """
     if len(filtered_combined) == 0:
         return helpers.empty_fig("No data for selected filters", height)
 
@@ -41,7 +33,6 @@ def timeseries_single(data, filtered_combined, selection, metric_index, height=2
     substances = list(grouped["Substance"].unique())
 
     def traces_for_years(up_to_years):
-        """One Scatter trace per substance showing data up to the given year set."""
         traces = []
         for substance in substances:
             color = cmap.get(substance, theme.TOL_MUTED[0])
@@ -55,10 +46,10 @@ def timeseries_single(data, filtered_combined, selection, metric_index, height=2
                 hovertemplate=f"{y_label}: %{{y:.2f}}<extra>{substance}</extra>"))
         return traces
 
-    # Initial state: all years visible (so the chart looks complete on load)
+    # start with all years shown
     initial_traces = traces_for_years(years)
 
-    # One frame per year - each reveals one more year cumulatively
+    # one frame per year, revealed cumulatively
     frames = [
         go.Frame(data=traces_for_years(years[:i + 1]), name=str(y))
         for i, y in enumerate(years)

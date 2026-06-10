@@ -1,10 +1,3 @@
-"""Within-country 1-year lagged correlation (research question 1).
-
-For each (Country, Substance) we pair seizure volume in year Y against street
-price / purity in year Y+1, *within the same country*, then aggregate the
-per-country Pearson r across countries with a Fisher-z weighted mean. This
-avoids the ecological/confounded pooling of all countries into one correlation.
-"""
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -12,14 +5,13 @@ from scipy import stats
 from . import config as cfg
 
 
-def _per_country(seizures, target_df, target_col):
-    """Yield per-(Country, Substance) lag correlations for one target column."""
+def per_country_corr(seizures, target_df, target_col):
     seiz = (
         seizures.groupby(["Country", "Substance", "Year"])["Kilograms"]
         .sum().reset_index()
     )
     seiz_lag = seiz.copy()
-    seiz_lag["Year"] = seiz_lag["Year"] + 1  # seizures(Y) -> aligns to year Y+1
+    seiz_lag["Year"] = seiz_lag["Year"] + 1  # seizures(Y) aligns to year Y+1
 
     tgt = (
         target_df.groupby(["Country", "Substance", "Year"])[target_col]
@@ -45,17 +37,16 @@ def _per_country(seizures, target_df, target_col):
     return pd.DataFrame(rows)
 
 
-def _aggregate(per_country: pd.DataFrame) -> pd.DataFrame:
-    """Fisher-z, sample-size-weighted mean of per-country r, per Substance/target."""
+def aggregate(per_country: pd.DataFrame) -> pd.DataFrame:
+    # fisher-z, sample-weighted mean of per-country r
     out = []
     valid = per_country.dropna(subset=["r"])
     for (substance, target), g in valid.groupby(["Substance", "target"]):
-        # Fisher z-transform; weight by (n - 3), the variance-stabilised weight.
         z = np.arctanh(g["r"].clip(-0.999, 0.999))
         w = (g["n"] - 3).clip(lower=1)
         z_mean = np.average(z, weights=w)
         r_agg = np.tanh(z_mean)
-        # 95% CI on the weighted z-mean -> back-transform.
+        # 95% CI on the weighted z-mean, back-transformed
         se = 1.0 / np.sqrt(w.sum())
         lo, hi = np.tanh(z_mean - 1.96 * se), np.tanh(z_mean + 1.96 * se)
         n_sig = int((g["p"] < cfg.SIGNIFICANCE_ALPHA).sum())
@@ -69,14 +60,13 @@ def _aggregate(per_country: pd.DataFrame) -> pd.DataFrame:
 
 
 def lag_correlation(prices, purity, seizures) -> pd.DataFrame:
-    """Combined per-country + substance-aggregate table for price and purity."""
     frames = []
     for tdf, tcol in [(prices, "Typical_USD"), (purity, "Typical")]:
-        pc = _per_country(seizures, tdf, tcol)
+        pc = per_country_corr(seizures, tdf, tcol)
         frames.append(pc)
-        frames.append(_aggregate(pc))
+        frames.append(aggregate(pc))
     result = pd.concat(frames, ignore_index=True)
-    # Ensure aggregate-only columns exist on country rows too.
+    # make sure aggregate-only columns exist on country rows too
     for col in ("n_countries", "n_significant", "ci_low", "ci_high"):
         if col not in result.columns:
             result[col] = np.nan

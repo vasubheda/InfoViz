@@ -1,6 +1,3 @@
-"""All shared client-side state: the canonical selection store and the
-map-driven country selection.
-"""
 from dash import dcc
 
 
@@ -10,10 +7,8 @@ def make_stores():
             "country": None, "countries": None, "substance": None,
             "year": None, "subregion": None,
         }),
-        # Canonical country selection, driven entirely by the enforcement map
-        # (replaces the old country dropdown). Empty list = all of Europe.
+        # country selection from the map, [] = all of Europe
         dcc.Store(id="country-store", data=[]),
-        # Active substances, toggled via the Key-indicators legend (replaces the
-        # old substance-table row selection). Empty list = all substances active.
+        # active substances from the legend, [] = all active
         dcc.Store(id="substance-select-store", data=[]),
     ]

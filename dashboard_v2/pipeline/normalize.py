@@ -1,6 +1,3 @@
-"""Normalisation steps: country names, substance taxonomy, and price/unit
-unification. Ported and tidied from the original ``src/dashboard_app.py``.
-"""
 import re
 
 import pandas as pd
@@ -15,17 +12,13 @@ def rename_countries(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def classify_substances(df: pd.DataFrame) -> pd.DataFrame:
-    """Add a canonical ``Substance`` column derived from raw ``DrugGroup``.
-
-    Unknown / out-of-scope groups collapse to 'Other' (kept, not dropped).
-    """
     df = df.copy()
     df["Substance"] = df["DrugGroup"].map(lambda x: cfg.SUBSTANCE_MAP.get(x, cfg.OTHER))
     return df
 
 
-def _extract_unit_multiplier(unit_str) -> int:
-    """Pull the leading numeric factor from a compound unit, e.g. '10 gram'->10."""
+def extract_unit_multiplier(unit_str) -> int:
+    # pull the leading number, e.g. '10 gram' -> 10
     if pd.isna(unit_str):
         return 1
     match = re.search(r"(\d+)", str(unit_str))
@@ -33,10 +26,9 @@ def _extract_unit_multiplier(unit_str) -> int:
 
 
 def unify_prices(df: pd.DataFrame) -> pd.DataFrame:
-    """Rescale price columns to a per-base-unit (gram / ml / piece) basis."""
     res = df.copy()
     price_cols = ["Typical_USD", "Minimum_USD", "Maximum_USD"]
-    unit_mult = res["Unit"].apply(_extract_unit_multiplier)
+    unit_mult = res["Unit"].apply(extract_unit_multiplier)
     conv_mult = res["Unit"].map(lambda x: cfg.UNIT_CONVERSION.get(str(x), 1))
     total = unit_mult * conv_mult
     for col in price_cols:
@@ -46,7 +38,6 @@ def unify_prices(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def unify_unit_names(df: pd.DataFrame) -> pd.DataFrame:
-    """Collapse the many raw unit strings into Gram / Millilitre / Piece."""
     res = df.copy()
     res["Unit"] = res["Unit"].replace(cfg.UNIT_NAME_MAP)
     return res
