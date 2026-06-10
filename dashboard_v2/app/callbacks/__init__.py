@@ -1,5 +1,5 @@
 """Register all callback groups against the Dash app."""
-from . import figures, selection, tabs, zoom
+from . import figures, selection, tabs, zoom, sidebar
 
 
 def register_callbacks(app, data):
@@ -7,3 +7,4 @@ def register_callbacks(app, data):
     zoom.register(app, data)
     tabs.register(app, data)
     figures.register(app, data)
+    sidebar.register(app, data)

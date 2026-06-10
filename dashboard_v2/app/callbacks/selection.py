@@ -16,16 +16,12 @@ def register(app, data):
     @app.callback(
         Output("selection-store", "data"),
         Output("brushing-info", "children"),
-        Input("timeseries-chart", "clickData"),
-        Input("price-ladder", "clickData"),
-        Input("priority-heatmap", "clickData"),
         Input("margin-map", "clickData"),
         Input("reset-button", "n_clicks"),
         State("selection-store", "data"),
         prevent_initial_call=True,
     )
-    def update_selection(ts_click, ladder_click, prio_hm_click, margin_click,
-                         reset, current):
+    def update_selection(margin_click, reset, current):
         trigger = ctx.triggered_id
         sel = dict(current or _empty())
 
@@ -39,38 +35,6 @@ def register(app, data):
                 if country:
                     sel["country"] = country
                     return sel, f"Country: {country}"
-
-            if trigger == "timeseries-chart" and ts_click:
-                pt = ts_click["points"][0]
-                sel["year"] = pt.get("x")
-                msg = f"Year {sel['year']}"
-                grp = pt.get("legendgroup")
-                if grp:
-                    sel["substance"] = grp
-                    msg += f" · {grp}"
-                return sel, msg
-
-            if trigger == "price-ladder" and ladder_click:
-                pt = ladder_click["points"][0]
-                # customdata = [substance, region, ws, rt, markup]
-                cd = pt.get("customdata") or []
-                substance = cd[0] if len(cd) > 0 else pt.get("y")
-                region = cd[1] if len(cd) > 1 else None
-                sel["substance"] = substance
-                # store canonical SubRegion (append ' Europe' if needed)
-                if region:
-                    sel["subregion"] = (region if "Europe" in region
-                                        else f"{region} Europe")
-                return sel, f"Price ladder: {region}, {substance}"
-
-            if trigger == "priority-heatmap" and prio_hm_click:
-                pt = prio_hm_click["points"][0]
-                # customdata = [country, substance]
-                cd = pt.get("customdata") or []
-                if len(cd) >= 2:
-                    sel["country"] = cd[0]
-                    sel["substance"] = cd[1]
-                    return sel, f"Priority: {cd[0]}, {cd[1]}"
         except (KeyError, IndexError, TypeError):
             pass
 
@@ -102,6 +66,12 @@ def register(app, data):
         clicked = ctx.triggered_id and ctx.triggered_id.get("index")
         if not clicked:
             return current or []
+        # Ignore spurious fires caused by the substance cards being re-rendered
+        # (new components mount with n_clicks=0; Dash fires ALL-pattern callbacks
+        # for them even though no real click occurred).
+        triggered_value = ctx.triggered[0]["value"] if ctx.triggered else None
+        if not triggered_value:
+            return current or []
         active = list(current) if current else list(all_substances)
         if clicked in active:
             active = [s for s in active if s != clicked]
@@ -110,3 +80,19 @@ def register(app, data):
             active = [s for s in all_substances if s in active or s == clicked]
         # Falling back to all-active when nothing is left keeps "[] = all" tidy.
         return [] if set(active) == set(all_substances) or not active else active
+
+    # The Temporal-tab substance dropdown offers exactly the substances active in
+    # the master legend ([] = all). It keeps the current pick when that pick is
+    # still active, otherwise falls back to the first available substance.
+    @app.callback(
+        Output("temporal-substance", "options"),
+        Output("temporal-substance", "value"),
+        Input("substance-select-store", "data"),
+        State("temporal-substance", "value"),
+    )
+    def sync_temporal_substance(active, current):
+        avail = active or all_substances
+        avail = [s for s in all_substances if s in set(avail)]
+        options = [{"label": s, "value": s} for s in avail]
+        value = current if current in avail else (avail[0] if avail else None)
+        return options, value

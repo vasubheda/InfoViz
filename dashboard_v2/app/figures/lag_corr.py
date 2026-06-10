@@ -8,8 +8,10 @@ import plotly.graph_objects as go
 
 from .. import theme
 from . import helpers
+from .cache import memoize_figure
 
 
+@memoize_figure()
 def lag_correlation(data, selection, target="Typical_USD"):
     lag = data.lag_correlation
     lag = lag[lag["target"] == target]
@@ -47,9 +49,18 @@ def _bar(data, rows, country, target, ci):
 
     fig.add_trace(go.Bar(
         x=rows["r"], y=rows["Substance"], orientation="h", marker_color=colors,
-        error_x=error_x, text=text, textposition="auto",
+        error_x=error_x,
         hovertemplate="<b>%{y}</b><br>r = %{x:.3f}<extra></extra>"))
     fig.add_vline(x=0, line_color="black", line_width=1)
+
+    # Value labels sit in the empty strip above each bar, anchored away from the
+    # bar so they never overlap the bar, the CI whisker, or the * marker.
+    for (_, row), label in zip(rows.iterrows(), text):
+        positive = row["r"] >= 0
+        fig.add_annotation(
+            x=row["r"], y=row["Substance"], text=label, showarrow=False,
+            xanchor="left" if positive else "right", yshift=13,
+            font=dict(size=11), align="left" if positive else "right")
 
     # Significance markers.
     if ci and "n_significant" in rows.columns:

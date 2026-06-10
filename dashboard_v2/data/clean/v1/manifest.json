@@ -29,15 +29,15 @@
     "prices": {
       "Typical_USD": {
         "originally_missing": 369,
-        "interpolated": 86,
-        "median_country_substance": 229,
+        "interpolated": 84,
+        "median_country_substance": 231,
         "median_subregion_substance": 48,
         "left_missing": 6
       },
       "Minimum_USD": {
         "originally_missing": 322,
-        "interpolated": 46,
-        "median_country_substance": 192,
+        "interpolated": 47,
+        "median_country_substance": 191,
         "median_subregion_substance": 84,
         "left_missing": 0
       },
@@ -52,8 +52,8 @@
     "purity": {
       "Typical": {
         "originally_missing": 103,
-        "interpolated": 31,
-        "median_country_substance": 44,
+        "interpolated": 30,
+        "median_country_substance": 45,
         "median_subregion_substance": 28,
         "left_missing": 0
       },

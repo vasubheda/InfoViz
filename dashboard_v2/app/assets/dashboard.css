@@ -45,3 +45,43 @@
     border-bottom: 2px solid #0072B2;
     font-weight: 600;
 }
+
+/* Year-range slider: filled range, handles and in-selection dots in the
+   heading gray. Dash 4 rebuilt the slider on Radix UI, so the class names are
+   dash-slider-* (the old rc-slider-* selectors no longer match). */
+#year-slider .dash-slider-range {
+    background-color: #495057;
+}
+#year-slider .dash-slider-thumb {
+    border-color: #495057;
+    background-color: #495057;
+}
+#year-slider .dash-slider-thumb:hover,
+#year-slider .dash-slider-thumb:active,
+#year-slider .dash-slider-thumb:focus {
+    border-color: #495057;
+    box-shadow: 0 0 0 5px rgba(73, 80, 87, 0.2);
+}
+/* Dots within the selected range (the ones not flagged outside-selection). */
+#year-slider .dash-slider-dot:not(.dash-slider-dot-outside-selection) {
+    border-color: #495057;
+}
+
+/* Q3 "corridors to show" slider: same heading gray as the total-seizures card
+   and the year slider above. */
+#q3-top-n .dash-slider-range {
+    background-color: #495057;
+}
+#q3-top-n .dash-slider-thumb {
+    border-color: #495057;
+    background-color: #495057;
+}
+#q3-top-n .dash-slider-thumb:hover,
+#q3-top-n .dash-slider-thumb:active,
+#q3-top-n .dash-slider-thumb:focus {
+    border-color: #495057;
+    box-shadow: 0 0 0 5px rgba(73, 80, 87, 0.2);
+}
+#q3-top-n .dash-slider-dot:not(.dash-slider-dot-outside-selection) {
+    border-color: #495057;
+}

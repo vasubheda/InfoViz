@@ -50,8 +50,9 @@ data can support.
 - **Imputation with provenance flags**: sporadic missing prices/purity are filled
   by within-series temporal interpolation, then group-median fallback, each
   filled cell flagged `*_is_imputed`. Seizure volumes are *never* imputed
-  (a missing year is not a zero). Imputed points render with **hollow / dotted
-  markers** in the app.
+  (a missing year is not a zero). The `*_is_imputed` flags are carried through to
+  the cleaned artifacts so downstream views can distinguish observed from filled
+  values.
 - **Colourblind-safe throughout**: one `app/theme.py` palette source — Paul Tol
   Muted (categorical), Viridis (sequential), RdBu (diverging). No red-green.
 - **Rigorous Q1**: the lagged correlation is computed *within each country*

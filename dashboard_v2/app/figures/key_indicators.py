@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 
 from .. import theme
 from . import helpers
+from .cache import memoize_figure
 
 # Opacity for a bar whose substance is currently deselected (dimmed-but-visible).
 _DIM_OPACITY = 0.22
@@ -20,26 +21,26 @@ def _active_set(all_substances, active):
     return set(active) if active else set(all_substances)
 
 
-def _bar(all_substances, active_set, values, colors, title, hover_unit,
+def _bar(substances, values, colors, title, hover_unit,
          fmt, tickprefix="", height=260):
-    """One vertical bar chart over the fixed substance order, dimming inactive.
+    """One vertical bar chart for the given substances.
 
     ``values`` carry ``None`` for substances with no data under the current
     filters (distinct from a genuine 0): Plotly draws no bar there and we label
     it "n/a", so a real zero (a drawn zero-height bar) stays distinguishable.
     """
-    opacities = [1.0 if s in active_set else _DIM_OPACITY for s in all_substances]
     text = ["n/a" if v is None else fmt(v) for v in values]
     present = [v for v in values if v is not None]
     fig = go.Figure(go.Bar(
-        x=all_substances, y=values,
-        marker_color=colors, marker_opacity=opacities,
+        x=substances, y=values,
+        marker_color=colors,
         text=text, textposition="outside",
         textfont=dict(size=10), cliponaxis=False,
         hovertemplate=f"%{{x}}<br>{hover_unit}<extra></extra>"))
     fig.update_layout(
         title=dict(text=title, font=dict(size=13)),
         height=height, plot_bgcolor=theme.PLOT_BG, showlegend=False,
+
         margin=dict(l=45, r=12, t=40, b=95),
         # Substance names along the x-axis (angled so the long ones — e.g.
         # "Tranquillizers and Sedatives" — fit the narrow md=4 columns).
@@ -53,16 +54,13 @@ def _bar(all_substances, active_set, values, colors, title, hover_unit,
     return fig
 
 
+@memoize_figure()
 def substance_bars(data, all_substances, active, seiz, prices, comb, height=260):
-    """Return (seizures, avg-price, avg-purity) bar figures over all substances.
-
-    Values aggregate the year + map selection (NOT the substance pick), matching
-    the old table, so a dimmed substance still shows its real metric. ``active``
-    is the selected-substance list ([]/None -> all active).
-    """
-    active_set = _active_set(all_substances, active)
-    colors = [data.substance_color_map.get(s, theme.TOL_MUTED[0])
-              for s in all_substances]
+    """Return (seizures, avg-price, avg-purity) bar figures for active substances only."""
+    active_subs = list(_active_set(all_substances, active) & set(all_substances))
+    # Preserve canonical ordering
+    active_subs = [s for s in all_substances if s in active_subs]
+    colors = [data.substance_color_map.get(s, theme.TOL_MUTED[0]) for s in active_subs]
 
     seiz_by = (seiz.groupby("Substance")["Kilograms"].sum() / 1000
                if len(seiz) else None)
@@ -72,21 +70,19 @@ def substance_bars(data, all_substances, active, seiz, prices, comb, height=260)
                  if len(comb) else None)
 
     def col(series):
-        """One value per substance; ``None`` where the metric has no data (so a
-        missing substance is drawn as a gap, not as a misleading zero)."""
         if series is None:
-            return [None] * len(all_substances)
+            return [None] * len(active_subs)
         return [float(series[s]) if s in series.index and series[s] == series[s]
-                else None for s in all_substances]
+                else None for s in active_subs]
 
-    fig_seiz = _bar(all_substances, active_set, col(seiz_by), colors,
+    fig_seiz = _bar(active_subs, col(seiz_by), colors,
                     "Seizures (t)", "Seizures: %{y:,.1f} t",
                     fmt=lambda v: f"{v:,.1f}", height=height)
-    fig_price = _bar(all_substances, active_set, col(price_by), colors,
-                     "Avg price (USD/g)", "Avg price: $%{y:,.2f}/g",
+    fig_price = _bar(active_subs, col(price_by), colors,
+                     "Avg Price (USD/g)", "Avg price: $%{y:,.2f}/g",
                      fmt=lambda v: f"${v:,.0f}", tickprefix="$", height=height)
-    fig_purity = _bar(all_substances, active_set, col(purity_by), colors,
-                      "Avg purity (%)", "Avg purity: %{y:.1f}%",
+    fig_purity = _bar(active_subs, col(purity_by), colors,
+                      "Avg Purity (%)", "Avg purity: %{y:.1f}%",
                       fmt=lambda v: f"{v:.0f}%", height=height)
     return fig_seiz, fig_price, fig_purity
 
