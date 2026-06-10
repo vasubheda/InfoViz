@@ -9,7 +9,7 @@ from .components.stores import make_stores
 
 def _loading(component):
     """Wrap a component in a Dash loading overlay for recompute feedback."""
-    return dcc.Loading(component, type="default", color="#0d6efd")
+    return dcc.Loading(component, type="default", color="#495057")
 
 
 def _graph(graph_id, hint=None, displaymodebar=True):
@@ -276,18 +276,24 @@ def build_layout(data):
                 # --- Panel Q3: cross-border spillover ---
                 html.Div(id="panel-q3", children=[
                     dbc.Row([
-                        _card("Q3 · Where to focus border control: best "
-                              "cross-border wholesale→retail arbitrage",
-                              [html.Small("Click a single country for its "
-                                          "land-border arbitrage — per neighbour "
-                                          "and substance, the more profitable "
-                                          "smuggling play (import / export). Or "
-                                          "select multiple / all countries to map "
-                                          "the best arbitrage corridor per "
-                                          "substance (cheapest wholesale → "
-                                          "priciest retail) and rank the top "
-                                          "corridors below (adjustable).",
-                                          className="text-muted d-block mb-1"),
+                        _card([
+                            "Q3 · Where to focus border control: best "
+                            "cross-border wholesale→retail arbitrage ",
+                            html.I(className="bi bi-info-circle text-muted ms-1",
+                                   id="q3-info", style={"cursor": "help"}),
+                            dbc.Tooltip(
+                                "Click a single country for its land-border "
+                                "arbitrage — per neighbour and substance, the "
+                                "more profitable smuggling play (import / "
+                                "export). Or select multiple / all countries to "
+                                "map the best arbitrage corridor per substance "
+                                "(cheapest wholesale → priciest retail) and rank "
+                                "the top corridors below (adjustable).",
+                                target="q3-info", placement="bottom"),
+                        ],
+                              [# Priority gaps surfaced at the top of the card body.
+                               html.Div(id="border-arbitrage-gaps",
+                                        className="mb-3"),
                                html.Div(_loading(dcc.Graph(id="market-flow-map")),
                                         id="q3-flow-wrap",
                                         style={"display": "none"}),
@@ -303,10 +309,8 @@ def build_layout(data):
                                                      (5, 10, 25, 50)},
                                               tooltip={"placement": "bottom"}),
                                ], id="q3-topn-wrap", className="mb-2"),
-                               _loading(dcc.Graph(id="border-arbitrage-chart")),
-                               html.Div(id="border-arbitrage-gaps",
-                                        className="mt-2")], md=8,
-                              id="q3-chart-col"),
+                               _loading(dcc.Graph(id="border-arbitrage-chart"))],
+                              md=8, id="q3-chart-col"),
                         _card("Selected country & neighbours",
                               _graph("neighbour-map", displaymodebar=False),
                               md=4, id="q3-neighbour-col"),

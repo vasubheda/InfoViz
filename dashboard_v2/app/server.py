@@ -18,7 +18,13 @@ from .layout import build_layout
 
 DATA = load_artifacts()
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],
+app = dash.Dash(__name__, external_stylesheets=[
+                    dbc.themes.BOOTSTRAP,
+                    # Bootstrap Icons (the `bi bi-*` glyphs used for the info
+                    # tooltip icons and the Q2 insight banner).
+                    "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/"
+                    "font/bootstrap-icons.min.css",
+                ],
                 suppress_callback_exceptions=True,
                 title="European Drug-Market Intelligence")
 server = app.server

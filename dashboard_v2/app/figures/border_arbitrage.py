@@ -19,6 +19,8 @@ CRS reprojection + buffer + spatial-intersection over all of Europe on every
 Q3 interaction. Names that carry no smuggling-relevant land border (islands:
 Cyprus, Iceland, Malta; enclaves with none in-dataset: Gibraltar) map to [].
 """
+import math
+
 import plotly.graph_objects as go
 
 from .. import theme
@@ -109,6 +111,27 @@ def _seized_tons(seizures, country, substance):
     sel = seizures[(seizures["Country"] == country)
                    & (seizures["Substance"] == substance)]
     return sel["Kilograms"].sum() / 1000 if len(sel) else 0.0
+
+
+def _bearing(origin, dest):
+    """Clockwise-from-north angle (deg) of origin->dest on the Mercator plane.
+
+    The arrowhead is a triangle-up marker (points north at angle 0) and Plotly's
+    marker ``angle`` rotates clockwise, so this aligns the head with the drawn
+    line. Mercator y uses the standard log-tangent so the angle matches the
+    straight segment the map draws between the two points (which is itself
+    projected), not the great-circle bearing.
+    """
+    (lon0, lat0), (lon1, lat1) = origin, dest
+
+    def _merc_y(lat):
+        return math.degrees(math.log(math.tan(math.pi / 4
+                                               + math.radians(lat) / 2)))
+
+    dx = lon1 - lon0
+    dy = _merc_y(lat1) - _merc_y(lat0)
+    # atan2(dx, dy): 0 = due north, increasing clockwise (east positive).
+    return (math.degrees(math.atan2(dx, dy))) % 360
 
 
 def _hex_to_rgba(hex_color, alpha):
@@ -397,12 +420,13 @@ def _market_rows(filtered_prices, filtered_seizures, pool, substances, cap=None)
 
 @memoize_figure()
 def market_flow_map(data, filtered_prices, filtered_seizures, pool, substances,
-                    height=460):
+                    height=620):
     """Flow map of the single best arbitrage corridor per substance.
 
     One arrow per substance: from the cheapest-wholesale origin to the
-    priciest-retail destination in the pool, coloured by substance and scaled in
-    width by the arbitrage spread. A faint grey base shows the pooled countries.
+    priciest-retail destination in the pool, coloured by substance, with the
+    arrowhead rotated to point along the corridor. A faint grey base shows the
+    pooled countries.
     """
     rows = _market_rows(filtered_prices, filtered_seizures, pool, substances,
                         cap=None)
@@ -426,17 +450,14 @@ def market_flow_map(data, filtered_prices, filtered_seizures, pool, substances,
         colorscale=[[0, "#eef0f2"], [1, "#eef0f2"]],
         marker_line_color="white", marker_line_width=0.5))
 
-    spans = [r["margin"] for r in arrows]
-    s_min, s_span = min(spans), (max(spans) - min(spans)) or 1.0
     for r in arrows:
         o, dst = pts.get(r["buy_c"]), pts.get(r["sell_c"])
         if not o or not dst:
             continue
         color = data.substance_color_map.get(r["substance"], theme.TOL_MUTED[0])
-        width = 2 + 8 * (r["margin"] - s_min) / s_span     # 2 .. 10 px
         fig.add_trace(go.Scattergeo(
             lon=[o[0], dst[0]], lat=[o[1], dst[1]], mode="lines",
-            line=dict(width=width, color=color), opacity=0.85,
+            line=dict(width=3, color=color), opacity=0.85,
             hoverinfo="skip", showlegend=False))
         # Destination marker = arrowhead; origin marker = small open dot.
         fig.add_trace(go.Scattergeo(
@@ -447,12 +468,13 @@ def market_flow_map(data, filtered_prices, filtered_seizures, pool, substances,
         fig.add_trace(go.Scattergeo(
             lon=[dst[0]], lat=[dst[1]], mode="markers",
             marker=dict(size=13, color=color, symbol="triangle-up",
+                        angle=_bearing(o, dst),
                         line=dict(width=1, color="white")),
             name=r["substance"], customdata=[r["hover"]],
             hovertemplate="%{customdata}", showlegend=True))
 
     fig.update_layout(
-        height=height, margin=dict(l=0, r=10, t=40, b=0),
+        height=height, margin=dict(l=0, r=0, t=40, b=0),
         title=f"Best arbitrage corridor per substance ({len(arrows)} flows)",
         legend=dict(title="Substance", orientation="h", yanchor="bottom",
                     y=-0.05, xanchor="center", x=0.5))
@@ -534,6 +556,7 @@ def market_gap_list(data, filtered_prices, filtered_seizures, pool, substances,
     ``cap`` matches the corridor bar chart's cap so the listed priority gaps are
     exactly those among the displayed corridors.
     """
+    import dash_bootstrap_components as dbc
     from dash import html
 
     rows = _market_rows(filtered_prices, filtered_seizures, pool, substances,
@@ -567,7 +590,15 @@ def market_gap_list(data, filtered_prices, filtered_seizures, pool, substances,
 
     return html.Div([
         html.Strong(f"⚑ {len(gaps)} priority market gap(s) "
-                    "(high margin, low seizures):"),
+                    "(high margin, low seizures): "),
+        html.I(className="bi bi-info-circle text-muted",
+               id="q3-gaps-info", style={"cursor": "help"}),
+        dbc.Tooltip(
+            "A corridor is flagged when its arbitrage spread is in the top "
+            "third of all shown corridors AND its combined seizures (origin + "
+            "destination) are in the bottom third — i.e. high profit, low "
+            "enforcement. Thresholds are recomputed for the current selection.",
+            target="q3-gaps-info", placement="bottom"),
         html.Ul(items, className="mt-2 mb-0"),
     ], className="small")
 
