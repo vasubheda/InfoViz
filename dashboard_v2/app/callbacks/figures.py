@@ -89,11 +89,11 @@ def register(app, data):
         Input("selection-store", "data"),
     )
     def update_kpi(active_store, countries, year_from, year_to, selection):
-        selection, _substances, _all, _yr, _co, filters = \
+        selection, _substances, _all, year_range, _co, filters = \
             _context(active_store, countries, year_from, year_to, selection)
         f_prices = apply_filters(data.prices, filters, selection)
         f_seiz = apply_filters(data.seizures, filters, selection)
-        return _kpi(f_seiz, f_prices)
+        return _kpi(f_seiz, f_prices, year_range)
 
     @app.callback(
         Output("temporal-maps", "figure"),
@@ -162,22 +162,37 @@ def register(app, data):
                 data, all_substances, active_store, t_seiz, t_prices, t_comb)
             # Subregion trends of the same three metrics, coloured by subregion.
             # Always shown; a single-year selection draws bars instead of lines.
-            f_seiz = apply_filters(data.seizures, filters, selection)
-            sr_comb_outer = apply_filters(data.combined_outer, filters, selection)
+            # These give a stable continent-wide subregion baseline, so they
+            # ignore the master panel's Regions & countries selection (country /
+            # multi-country / subregion brushing) - only the year and substance
+            # filters apply.
+            sr_selection = {"country": None, "countries": None,
+                            "subregion": None,
+                            "substance": selection.get("substance"),
+                            "year": selection.get("year")}
+            f_seiz = apply_filters(data.seizures, filters, sr_selection)
+            sr_comb_outer = apply_filters(data.combined_outer, filters,
+                                          sr_selection)
             sr_seiz, sr_price, sr_purity = subregion.subregion_trends(
                 data, f_seiz, sr_comb_outer, year_range[0] == year_range[1])
 
-        # TEMPORAL TAB - animated map of one metric for one substance. The full
-        # continent is always drawn (grey base); a country subset just restricts
-        # which countries are coloured AND the colour scale's min-max, so the
-        # user can exclude outliers and rescale by deselecting them.
-        elif active_tab == "tab-temporal":
+        # NATIONAL TAB - the animated metric-over-time map on top of the
+        # retail-wholesale markup map. The temporal map: full continent always
+        # drawn (grey base); a country subset just restricts which countries are
+        # coloured AND the colour scale's min-max, so the user can exclude
+        # outliers and rescale by deselecting them. The margin map draws the
+        # whole continent and handles a country subset internally.
+        elif active_tab == "tab-national":
             temp_maps = temporal_maps.temporal_maps(
                 data, temporal_metric, temporal_substance, year_range,
                 countries=countries)
             temp_hi = temporal_maps.temporal_highlights(
                 data, temporal_metric, temporal_substance, year_range,
                 countries=countries)
+            margin = maps.margin_map(data, selection, substances,
+                                     year_range=list(year_range))
+            margin_hi = maps.margin_highlights(data, selection, substances,
+                                               year_range=list(year_range))
 
         # TAB Q1
         elif active_tab == "tab-q1":
@@ -187,15 +202,6 @@ def register(app, data):
                                                        else "Typical"))
             lag_note = _lag_limitations(data)
             reg_fig, reg_stats = multivariate.regression_facets(data, f_comb, x_axis, y_axis)
-
-        # TAB Q2
-        elif active_tab == "tab-q2":
-            # The margin map draws the whole continent (grey base) and handles a
-            # country subset internally, so it always renders.
-            margin = maps.margin_map(data, selection, substances,
-                                     year_range=list(year_range))
-            margin_hi = maps.margin_highlights(data, selection, substances,
-                                               year_range=list(year_range))
 
         # TAB Q3
         elif active_tab == "tab-q3":
@@ -288,20 +294,22 @@ def _lag_limitations(data):
     p = data.manifest["lag_params"]
     return [html.Strong("Limitations: "),
             f"only {p['min_pairs']}+ paired years per country are correlated; "
-            "5-year window (2019–2023) gives small n; prices are USD-normalised "
+            "5-year window (2019-2023) gives small n; prices are USD-normalised "
             "per gram; correlation is not causation."]
 
 
-def _kpi(seiz, prices):
+def _kpi(seiz, prices, year_range):
     # A single compact total-seizures indicator, shown in the master panel.
     # (The old two-card KPI row - total seizures + countries - was dropped from
     # the Overview tab; the country count is already surfaced beside the map.)
     total_t = seiz["Kilograms"].sum() / 1000 if len(seiz) else 0
+    lo, hi = year_range
+    year_label = str(lo) if lo == hi else f"{lo}-{hi}"
     # Match the master-panel section headings (e.g. "YEAR RANGE").
     color = "#495057"
     return dbc.Card(dbc.CardBody([
         html.H4(f"{total_t:,.1f}", className="mb-0", style={"color": color}),
-        html.P("Total seizures (t), current selection",
+        html.P(f"Total seizures (t), in {year_label}",
                className="text-muted small mb-0"),
     ]), className="text-center",
         style={"borderLeft": f"4px solid {color}"})

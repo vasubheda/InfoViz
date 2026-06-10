@@ -99,7 +99,7 @@ _MARGIN_SIMPLIFY_TOL = 0.2
 
 
 def _margin_winners(prices, substances, selection):
-    """Per (Country, Year), the substance with the highest retail–wholesale
+    """Per (Country, Year), the substance with the highest retail-wholesale
     markup - computed twice, once ranked by relative % and once by absolute $/g.
 
     Margins are recomputed per year from `prices` (the `inland_margin` artifact

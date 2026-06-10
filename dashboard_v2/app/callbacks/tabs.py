@@ -4,12 +4,10 @@ this callback just toggles each panel's visibility via its `style`.
 """
 from dash import Input, Output
 
-_PANELS = ["panel-overview", "panel-temporal", "panel-q1", "panel-q2",
-           "panel-q3"]
+_PANELS = ["panel-overview", "panel-national", "panel-q1", "panel-q3"]
 _TAB_TO_PANEL = {"tab-overview": "panel-overview",
-                 "tab-temporal": "panel-temporal",
-                 "tab-q1": "panel-q1", "tab-q2": "panel-q2",
-                 "tab-q3": "panel-q3"}
+                 "tab-national": "panel-national",
+                 "tab-q1": "panel-q1", "tab-q3": "panel-q3"}
 
 
 def register(app, data):

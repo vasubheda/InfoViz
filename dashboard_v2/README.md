@@ -1,7 +1,7 @@
 # European Drug-Market Intelligence - Dashboard v2
 
 An interactive Dash/Plotly dashboard over the UNODC World Drug Report
-(2019–2023, European subset) built to answer the five research questions in the
+(2019-2023, European subset) built to answer the five research questions in the
 project proposal, oriented toward **law-enforcement / policy prioritisation**.
 
 This is a clean rewrite of the earlier `src/` prototype. It separates a
@@ -13,7 +13,7 @@ artifacts) from a **modular app** that only ever reads those artifacts.
 | RQ | View |
 |----|------|
 | Q1 Do seizures move the market? | Within-country, 1-year-lagged seizure→price/purity correlation + per-substance regression facets |
-| Q2 Which markets have the highest markup? | Retail↔wholesale price-ladder (dumbbell) + markup-over-time trend + highest retail–wholesale markup choropleth |
+| Q2 Which markets have the highest markup? | Retail↔wholesale price-ladder (dumbbell) + markup-over-time trend + highest retail-wholesale markup choropleth |
 | Q3 How do localised seizures affect neighbours? | Cross-border price-arbitrage exposure map (spillover-risk indicator - see *Deviation from the proposal* below) |
 | Q4 Which markets are most profitable? | Enforcement-priority composite index (Cleveland dot plot) |
 | Q5 Which drugs to focus on per country? | Country × substance enforcement-priority heatmap (+ semantic-zoom seizure map) |
@@ -33,7 +33,7 @@ differs.
 
 The proposal framed Q3 as *"how do localised seizure events impact neighbouring
 countries' drug markets?"* - a backward-looking causal effect. With only five
-years of data (2019–2023), a robust cross-border seizure→neighbour-price lag is
+years of data (2019-2023), a robust cross-border seizure→neighbour-price lag is
 not estimable (too few paired observations per border). We therefore deliver Q3
 as a **cross-border price-arbitrage exposure** indicator: built on geojson
 land-border adjacency, it shows where price gaps make a displaced market more
