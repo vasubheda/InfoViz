@@ -1,14 +1,12 @@
 """The single figures callback: global filters + selection + map-driven country
--> every figure. Each figure is produced by a pure builder; the Q1 lag and Q4
-priority charts re-aggregate under the active selection (fixing the old app's
-frozen-panel bug).
+-> every figure. Each figure is produced by a pure builder; the Q1 lag charts
+re-aggregate under the active selection (fixing the old app's frozen-panel bug).
 """
 import dash_bootstrap_components as dbc
 from dash import Input, Output, State, html, no_update
 
 from ..figures import (border_arbitrage, key_indicators, lag_corr,
-                       maps, multivariate, priority,
-                       priority_heatmap, subregion, temporal_maps, timeseries)
+                       maps, multivariate, subregion, temporal_maps, timeseries)
 from ..figures.filtering import Filters, apply_filters
 from .. import theme
 
@@ -24,9 +22,7 @@ def register(app, data):
         Output("lag-limitations", "children"),
         Output("regression-chart", "figure"),
         Output("regression-stats", "children"),
-        Output("priority-heatmap", "figure"),
         Output("margin-map", "figure"),
-        Output("priority-chart", "figure"),
         Output("border-arbitrage-chart", "figure"),
         Output("border-arbitrage-gaps", "children"),
         Output("market-flow-map", "figure"),
@@ -92,8 +88,7 @@ def register(app, data):
         # Output Defaults (lazy loading - don't update if not active tab)
         temp_maps = no_update
         ts_seiz = ts_price_fig = ts_purity_fig = lag_fig = lag_note = \
-        reg_fig = reg_stats = \
-        prio_hm = margin = prio = border_arb = \
+        reg_fig = reg_stats = margin = border_arb = \
         border_gaps = flow_map = neigh_map = ki_seiz = ki_price = ki_purity = \
         sr_seiz = sr_price = sr_purity = \
         q2_insight = no_update
@@ -176,15 +171,9 @@ def register(app, data):
                     data, arb_prices, arb_seiz, countries, substances,
                     cap=q3_top_n)
 
-        # TAB Q45
-        elif active_tab == "tab-q45":
-            prio = priority.priority_dotplot(data, selection, substances, year_range)
-            prio_hm = priority_heatmap.priority_heatmap(
-                data, selection, substances, year_range)
-
         return (enf_map, temp_maps, ts_seiz, ts_price_fig, ts_purity_fig,
-                lag_fig, lag_note, reg_fig, reg_stats, prio_hm,
-                margin, prio, border_arb, border_gaps, flow_map, neigh_map,
+                lag_fig, lag_note, reg_fig, reg_stats,
+                margin, border_arb, border_gaps, flow_map, neigh_map,
                 kpi, ki_seiz, ki_price, ki_purity,
                 sr_seiz, sr_price, sr_purity, subst_cards, q2_insight)
 

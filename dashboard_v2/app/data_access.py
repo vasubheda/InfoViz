@@ -18,7 +18,7 @@ CLEAN_DIR = DATA_DIR / "clean" / f"v{ARTIFACT_VERSION}"
 
 _ARTIFACTS = [
     "prices", "purity", "seizures", "combined",
-    "inland_margin", "enforcement_metrics", "lag_correlation",
+    "inland_margin", "lag_correlation",
 ]
 
 
@@ -29,7 +29,6 @@ class AppData:
     seizures: pd.DataFrame
     combined: pd.DataFrame
     inland_margin: pd.DataFrame
-    enforcement_metrics: pd.DataFrame
     lag_correlation: pd.DataFrame
     europe_gdf: gpd.GeoDataFrame
     geo_lookup: dict

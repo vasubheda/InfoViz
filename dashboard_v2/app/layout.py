@@ -125,10 +125,9 @@ def build_layout(data):
                                  className="detail-tabs", children=[
                             dbc.Tab(label="Overview", tab_id="tab-overview"),
                             dbc.Tab(label="Temporal", tab_id="tab-temporal"),
-                            dbc.Tab(label="Seizure Impact", tab_id="tab-q1"),
                             dbc.Tab(label="Profitability", tab_id="tab-q2"),
                             dbc.Tab(label="Cross-Border", tab_id="tab-q3"),
-                            dbc.Tab(label="Enforcement Priority", tab_id="tab-q45"),
+                            dbc.Tab(label="Seizure Impact", tab_id="tab-q1"),
                         ]), style={"flexGrow": 1}
                     )
                 ], className="mb-3 d-flex align-items-center",
@@ -174,17 +173,20 @@ def build_layout(data):
                 # --- Panel Temporal: a metric for one substance, mapped & animated ---
                 html.Div(id="panel-temporal", children=[
                     dbc.Row([
-                        _card("Metric by country, over time (animated)",
-                              [html.Small("A chosen metric per country. Price and "
-                                          "purity split into retail (left) vs "
-                                          "wholesale (right); seizures show a "
-                                          "single total. ▶ animates the selected "
-                                          "year range (latest year shown by "
-                                          "default). Grey = no data for the "
-                                          "metric/substance/year. Purity is "
-                                          "%-measured only (mg/tablet excluded).",
-                                          className="text-muted d-block mb-2"),
-                               dbc.Row([
+                        _card(["Metric by country, over time (animated) ",
+                               html.I(className="bi bi-info-circle text-muted "
+                                      "ms-1", id="temporal-info",
+                                      style={"cursor": "help"}),
+                               dbc.Tooltip(
+                                   "A chosen metric per country. Price and "
+                                   "purity split into retail (left) vs "
+                                   "wholesale (right); seizures show a single "
+                                   "total. ▶ animates the selected year range "
+                                   "(latest year shown by default). Grey = no "
+                                   "data for the metric/substance/year. Purity "
+                                   "is %-measured only (mg/tablet excluded).",
+                                   target="temporal-info", placement="bottom")],
+                              [dbc.Row([
                                    dbc.Col([
                                        html.Label("Metric", className="small "
                                                   "text-muted mb-1"),
@@ -219,22 +221,26 @@ def build_layout(data):
                 # The two cards are stacked full-width (one above the other).
                 html.Div(id="panel-q1", children=[
                     dbc.Row([
-                        _card("Q1 · Do seizures move the market? "
-                              "(within-country, +1yr lag)",
-                              [html.Small("Pearson r between seizures in year Y "
-                                          "and street price in Y+1, computed per "
-                                          "country then aggregated (Fisher-z, "
-                                          "sample-weighted). Select a country to "
-                                          "see its own correlations.",
-                                          className="text-muted d-block mb-2"),
-                               _loading(dcc.Graph(id="lag-correlation-chart",
+                        _card(["Q1 Do seizures move the market? "
+                               "(within-country, +1yr lag) ",
+                               html.I(className="bi bi-info-circle text-muted "
+                                      "ms-1", id="q1-lag-info",
+                                      style={"cursor": "help"}),
+                               dbc.Tooltip(
+                                   "Pearson r between seizures in year Y and "
+                                   "street price in Y+1, computed per country "
+                                   "then aggregated (Fisher-z, sample-weighted)."
+                                   " Select a country to see its own "
+                                   "correlations.",
+                                   target="q1-lag-info", placement="bottom")],
+                              [_loading(dcc.Graph(id="lag-correlation-chart",
                                          config={"displayModeBar": False})),
                                html.Div(id="lag-limitations",
                                         className="small text-muted mt-2")],
                               md=12),
                     ], className="mb-3"),
                     dbc.Row([
-                        _card("Q1 · Correlation detail by substance",
+                        _card("Q1 Correlation detail by substance",
                               [dbc.Row([
                                   dbc.Col(dcc.Dropdown(id="x-axis", clearable=False,
                                           value="Kilograms", className="small",
@@ -260,15 +266,19 @@ def build_layout(data):
                         dbc.Col(html.Div(id="q2-insight-banner", className="mb-3")),
                     ]),
                     dbc.Row([
-                        _card("Q2 · Highest retail–wholesale markup by country",
-                              _graph("margin-map",
-                                     "Per country, the substance with the "
-                                     "biggest markup — left ranks by relative "
-                                     "% , right by absolute $/g. Colours match "
-                                     "the master-panel substance legend; grey = "
-                                     "no data. ▶ animates the selected year "
-                                     "range; latest year shown by default. "
-                                     "Click a country to filter."),
+                        _card(["Q2 Highest retail–wholesale markup by country ",
+                               html.I(className="bi bi-info-circle text-muted "
+                                      "ms-1", id="q2-info",
+                                      style={"cursor": "help"}),
+                               dbc.Tooltip(
+                                   "Per country, the substance with the biggest "
+                                   "markup — left ranks by relative %, right by "
+                                   "absolute $/g. Colours match the master-panel "
+                                   "substance legend; grey = no data. ▶ animates "
+                                   "the selected year range; latest year shown "
+                                   "by default. Click a country to filter.",
+                                   target="q2-info", placement="bottom")],
+                              _graph("margin-map"),
                               md=12),
                     ], className="mb-4"),
                 ]),
@@ -277,7 +287,7 @@ def build_layout(data):
                 html.Div(id="panel-q3", children=[
                     dbc.Row([
                         _card([
-                            "Q3 · Where to focus border control: best "
+                            "Q3 Where to focus border control: best "
                             "cross-border wholesale→retail arbitrage ",
                             html.I(className="bi bi-info-circle text-muted ms-1",
                                    id="q3-info", style={"cursor": "help"}),
@@ -316,25 +326,6 @@ def build_layout(data):
                               md=4, id="q3-neighbour-col"),
                     ], className="mb-4"),
                 ]),
-
-                # --- Panel Q4/Q5: enforcement priority ---
-                html.Div(id="panel-q45", children=[
-                    dbc.Row([
-                        _card("Q4 · Market profitability / enforcement-priority "
-                              "index",
-                              [html.Small("Composite: 40% retail–wholesale "
-                                          "markup + 30% retail price + 30% "
-                                          "inverse seizure pressure. Top "
-                                          "substance shown per country.",
-                                          className="text-muted d-block mb-1"),
-                               _loading(dcc.Graph(id="priority-chart",
-                                         config={"displayModeBar": False}))]),
-                        _card("Q5 · Enforcement priority by country & substance",
-                              _graph("priority-heatmap",
-                                     "Darker = higher priority. Click a cell to "
-                                     "filter by country & substance.")),
-                    ], className="mb-4"),
-                ]),
             ]),
         ], className="g-3 mb-4"),
 
@@ -344,8 +335,8 @@ def build_layout(data):
         # beneath it (the container's bottom padding keeps content from hiding
         # permanently behind it).
         html.Div(
-            html.P("Data: UNODC World Drug Report 2019–2023 · "
-                   "Built with Dash/Plotly · Palettes: Paul Tol Muted "
+            html.P("Data: UNODC World Drug Report 2019–2023 "
+                   "Built with Dash/Plotly Palettes: Paul Tol Muted "
                    "(categorical), Viridis (sequential)",
                    className="text-center text-muted small mb-0"),
             style={"position": "fixed", "bottom": 0, "left": 0, "right": 0,
