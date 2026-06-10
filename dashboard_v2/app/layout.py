@@ -21,11 +21,14 @@ def _graph(graph_id, hint=None, displaymodebar=True):
     return children
 
 
-def _card(title, body, md=6, className="detail-card"):
+def _card(title, body, md=6, className="detail-card", id=None):
+    col_kwargs = {"md": md}
+    if id is not None:
+        col_kwargs["id"] = id
     return dbc.Col(dbc.Card([
         dbc.CardHeader(html.H5(title, className="mb-0")),
         dbc.CardBody(body),
-    ], className=className), md=md)
+    ], className=className), **col_kwargs)
 
 
 def build_layout(data):
@@ -264,20 +267,26 @@ def build_layout(data):
                     dbc.Row([
                         _card("Q3 · Where to focus border control: best "
                               "cross-border wholesale→retail arbitrage",
-                              [html.Small("Select a single country on the map. "
-                                          "For each land neighbour and substance "
-                                          "this shows the more profitable "
-                                          "smuggling play — import (buy wholesale "
-                                          "next door, sell retail here) or export "
-                                          "(vice versa). Longer bars = stronger "
-                                          "smuggling incentive at that border.",
+                              [html.Small("Click a single country for its "
+                                          "land-border arbitrage — per neighbour "
+                                          "and substance, the more profitable "
+                                          "smuggling play (import / export). Or "
+                                          "select multiple / all countries to map "
+                                          "the best arbitrage corridor per "
+                                          "substance (cheapest wholesale → "
+                                          "priciest retail) and rank the top 25 "
+                                          "corridors below.",
                                           className="text-muted d-block mb-1"),
+                               html.Div(_loading(dcc.Graph(id="market-flow-map")),
+                                        id="q3-flow-wrap",
+                                        style={"display": "none"}),
                                _loading(dcc.Graph(id="border-arbitrage-chart")),
                                html.Div(id="border-arbitrage-gaps",
-                                        className="mt-2")], md=8),
+                                        className="mt-2")], md=8,
+                              id="q3-chart-col"),
                         _card("Selected country & neighbours",
                               _graph("neighbour-map", displaymodebar=False),
-                              md=4),
+                              md=4, id="q3-neighbour-col"),
                     ], className="mb-4"),
                 ]),
 

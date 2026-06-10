@@ -29,6 +29,7 @@ def register(app, data):
         Output("priority-chart", "figure"),
         Output("border-arbitrage-chart", "figure"),
         Output("border-arbitrage-gaps", "children"),
+        Output("market-flow-map", "figure"),
         Output("neighbour-map", "figure"),
         Output("kpi-panel", "children"),
         Output("ki-seizures-bar", "figure"),
@@ -88,7 +89,8 @@ def register(app, data):
         ts_seiz = ts_price_fig = ts_purity_fig = lag_fig = lag_note = \
         reg_fig = reg_stats = \
         prio_hm = margin = prio = border_arb = \
-        border_gaps = neigh_map = ki_seiz = ki_price = ki_purity = q2_insight = no_update
+        border_gaps = flow_map = neigh_map = ki_seiz = ki_price = ki_purity = \
+        q2_insight = no_update
 
         # OVERVIEW TAB
         if active_tab == "tab-overview":
@@ -137,17 +139,29 @@ def register(app, data):
 
         # TAB Q3
         elif active_tab == "tab-q3":
-            single_country = countries[0] if len(countries) == 1 else None
             geo_unfiltered = {"country": None, "countries": None,
                               "substance": selection.get("substance"),
                               "year": selection.get("year"), "subregion": None}
             arb_prices = apply_filters(data.prices, filters, geo_unfiltered)
             arb_seiz = apply_filters(data.seizures, filters, geo_unfiltered)
-            border_arb = border_arbitrage.border_arbitrage(
-                data, arb_prices, arb_seiz, single_country, substances)
-            border_gaps = border_arbitrage.priority_gap_list(
-                data, arb_prices, arb_seiz, single_country, substances)
-            neigh_map = border_arbitrage.neighbour_map(data, single_country)
+            if len(countries) == 1:
+                # Single-country land-border arbitrage (+ neighbour map).
+                single_country = countries[0]
+                border_arb = border_arbitrage.border_arbitrage(
+                    data, arb_prices, arb_seiz, single_country, substances)
+                border_gaps = border_arbitrage.priority_gap_list(
+                    data, arb_prices, arb_seiz, single_country, substances)
+                neigh_map = border_arbitrage.neighbour_map(data, single_country)
+            else:
+                # Multi/all-country market arbitrage (no borders): a flow map of
+                # the best corridor per substance + ranked corridor bars. The
+                # neighbour-map column is hidden by _toggle_q3_layout below.
+                flow_map = border_arbitrage.market_flow_map(
+                    data, arb_prices, arb_seiz, countries, substances)
+                border_arb = border_arbitrage.market_arbitrage(
+                    data, arb_prices, arb_seiz, countries, substances)
+                border_gaps = border_arbitrage.market_gap_list(
+                    data, arb_prices, arb_seiz, countries, substances)
 
         # TAB Q45
         elif active_tab == "tab-q45":
@@ -157,7 +171,7 @@ def register(app, data):
 
         return (enf_map, temp_maps, ts_seiz, ts_price_fig, ts_purity_fig,
                 lag_fig, lag_note, reg_fig, reg_stats, prio_hm,
-                margin, prio, border_arb, border_gaps, neigh_map,
+                margin, prio, border_arb, border_gaps, flow_map, neigh_map,
                 kpi, ki_seiz, ki_price, ki_purity, subst_cards, q2_insight)
 
     # Hide the Overview time-series row when a single year is selected (no trend
@@ -169,6 +183,21 @@ def register(app, data):
     )
     def _toggle_ts_row(year_from, year_to):
         return {"display": "none"} if year_from == year_to else {}
+
+    # Q3 has two modes: a single clicked country shows its land-border arbitrage
+    # beside a neighbour map (chart md=8 + map md=4); any other selection (all or
+    # a multi-country subset) shows a borderless per-substance market spread at
+    # full width, with the neighbour-map column hidden.
+    @app.callback(
+        Output("q3-chart-col", "md"),
+        Output("q3-neighbour-col", "style"),
+        Output("q3-flow-wrap", "style"),
+        Input("country-store", "data"),
+    )
+    def _toggle_q3_layout(countries):
+        single = len(countries or []) == 1
+        hide = {"display": "none"}
+        return (8 if single else 12), ({} if single else hide), (hide if single else {})
 
 
 def _lag_limitations(data):
