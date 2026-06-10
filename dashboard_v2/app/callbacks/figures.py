@@ -35,7 +35,6 @@ def register(app, data):
         Output("sr-price", "figure"),
         Output("sr-purity", "figure"),
         Output("substance-legend", "children"),
-        Output("q2-insight-banner", "children"),
         Input("substance-select-store", "data"),
         Input("country-store", "data"),
         Input("year-from", "value"),
@@ -90,8 +89,7 @@ def register(app, data):
         ts_seiz = ts_price_fig = ts_purity_fig = lag_fig = lag_note = \
         reg_fig = reg_stats = margin = border_arb = \
         border_gaps = flow_map = neigh_map = ki_seiz = ki_price = ki_purity = \
-        sr_seiz = sr_price = sr_purity = \
-        q2_insight = no_update
+        sr_seiz = sr_price = sr_purity = no_update
 
         # OVERVIEW TAB
         if active_tab == "tab-overview":
@@ -141,7 +139,6 @@ def register(app, data):
             # country subset internally, so it always renders.
             margin = maps.margin_map(data, selection, substances,
                                      year_range=list(year_range))
-            q2_insight = _generate_q2_insight(data.inland_margin, f_prices)
 
         # TAB Q3
         elif active_tab == "tab-q3":
@@ -175,7 +172,7 @@ def register(app, data):
                 lag_fig, lag_note, reg_fig, reg_stats,
                 margin, border_arb, border_gaps, flow_map, neigh_map,
                 kpi, ki_seiz, ki_price, ki_purity,
-                sr_seiz, sr_price, sr_purity, subst_cards, q2_insight)
+                sr_seiz, sr_price, sr_purity, subst_cards)
 
     # Hide the Overview time-series row when a single year is selected (no trend
     # to draw); the substance bars above it stay visible.
@@ -228,35 +225,3 @@ def _kpi(seiz, prices):
                className="text-muted small mb-0"),
     ]), className="text-center",
         style={"borderLeft": f"4px solid {color}"})
-        
-def _generate_q2_insight(inland_margin, f_prices):
-    if len(inland_margin) == 0:
-        return html.Div()
-        
-    margin = inland_margin.copy()
-    valid = margin.dropna(subset=["Margin"])
-    if len(valid) == 0:
-        return html.Div()
-        
-    # Get the country with the absolute highest markup in the current selection
-    max_idx = valid["Margin"].idxmax()
-    top_row = valid.loc[max_idx]
-    
-    country = top_row["Country"]
-    substance = top_row["Substance"]
-    markup = top_row["Margin"]
-    
-    return dbc.Alert(
-        [
-            html.I(className="bi bi-info-circle-fill me-2"),
-            html.Strong("Key Insight: "),
-            f"Within the current selection, the highest absolute markup is observed in ",
-            html.Strong(f"{country}"),
-            f" for ",
-            html.Strong(f"{substance}"),
-            f" (${markup:,.0f}/g retail-wholesale spread)."
-        ],
-        color="info",
-        className="d-flex align-items-center mb-0"
-    )
-

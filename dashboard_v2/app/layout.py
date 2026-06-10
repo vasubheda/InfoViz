@@ -263,9 +263,6 @@ def build_layout(data):
                 # --- Panel Q2: profitability & markup ---
                 html.Div(id="panel-q2", children=[
                     dbc.Row([
-                        dbc.Col(html.Div(id="q2-insight-banner", className="mb-3")),
-                    ]),
-                    dbc.Row([
                         _card(["Q2 Highest retail–wholesale markup by country ",
                                html.I(className="bi bi-info-circle text-muted "
                                       "ms-1", id="q2-info",
